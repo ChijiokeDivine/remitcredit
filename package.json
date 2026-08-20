@@ -1,0 +1,65 @@
+{
+  "name": "remitcredit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Remittance-backed micro-loan underwriting on Creditcoin, using the Attestcoin Protocol to verify cross-chain remittance history and a rules-based credit agent to price loans autonomously.",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "node": "hardhat node",
+    "deploy:testnet": "hardhat run scripts/deploy.ts --network cc3Testnet",
+    "deploy:mainnet": "hardhat run scripts/deploy.ts --network cc3Mainnet",
+    "deploy:mocks:sepolia": "hardhat run scripts/deployMocks.ts --network sepolia",
+    "worker": "ts-node worker/src/index.ts",
+    "worker:dev": "nodemon --watch worker --watch shared -e ts --exec ts-node worker/src/index.ts",
+    "backend": "ts-node backend/src/server.ts",
+    "backend:dev": "nodemon --watch backend --watch shared -e ts --exec ts-node backend/src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "frontend:dev": "next dev",
+    "frontend:build": "next build",
+    "frontend:start": "next start",
+    "frontend:lint": "next lint"
+  },
+  "dependencies": {
+    "@gluwa/usc-sdk": "^0.18.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/ws": "^8.18.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "lucide-react": "^1.33.0",
+    "next": "^16.3.1",
+    "postcss": "^8.5.26",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwindcss": "^4.3.3",
+    "ws": "^8.21.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "2.0.8",
+    "@nomicfoundation/hardhat-ethers": "^3.0.8",
+    "@nomicfoundation/hardhat-network-helpers": "1.0.12",
+    "@nomicfoundation/hardhat-toolbox": "5.0.0",
+    "@openzeppelin/contracts": "5.0.2",
+    "@types/chai": "^5.2.3",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/mocha": "^10.0.7",
+    "@types/node": "^20.14.10",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "chai": "4.5.0",
+    "ethers": "^6.13.4",
+    "hardhat": "^2.26.0",
+    "nodemon": "^3.1.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.3"
+  },
+  "postcss": {
+    "plugins": {
+      "@tailwindcss/postcss": {}
+    }
+  }
+}
