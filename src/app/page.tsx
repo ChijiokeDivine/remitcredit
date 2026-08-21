@@ -3,6 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Flower2, PhoneOutgoing, Terminal, Copy, type LucideIcon } from "lucide-react";
+import AdminGrid from "../components/AdminGrid";
+import DetailSection from "../components/DetailSection";
+import FAQ from "../components/FAQ";
+import Footer from "../components/Footer";
+
+
 
 type Example = {
   icon: LucideIcon;
@@ -70,7 +76,8 @@ export default function Home() {
   }
 
   return (
-    <main className="relative h-[100dvh] w-full overflow-hidden bg-neutral-900">
+    <main className="relative w-full">
+      <section className="relative h-[100dvh] w-full overflow-hidden bg-neutral-900">
       {/* Background video */}
       <video
         ref={videoRef}
@@ -81,7 +88,7 @@ export default function Home() {
         poster="/hero-poster.jpg"
         className="absolute inset-0 h-full w-full object-cover"
       >
-        <source src="/videos/hero-bg.mp4" type="video/mp4" />
+        <source src="/videos/9198272-hd_1920_1080_25fps.mp4" type="video/mp4" />
       </video>
 
       {/* Darkening overlay for text legibility */}
@@ -89,10 +96,10 @@ export default function Home() {
 
       {/* Nav */}
       <header className="fixed inset-x-0 top-5 z-30 flex justify-center px-4 md:top-6">
-        <nav className="flex items-center gap-1.5 rounded-lg bg-white/10 p-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.15)] ring-1 ring-white/25 backdrop-blur-md">
+        <nav className="flex items-center gap-1.5 rounded-md bg-white/10 p-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.15)] ring-1 ring-white/25 backdrop-blur-md">
           <Link
             href="/"
-            className="flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white/90 md:px-5 md:py-2.5 md:text-[15px]"
+            className="flex items-center gap-1.5 rounded-md bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white/90 md:px-5 md:py-2.5 md:text-[15px]"
           >
             <Flower2 className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
             <span className="font-[family-name:var(--font-serif)]">Lassie</span>
@@ -100,21 +107,21 @@ export default function Home() {
 
           <Link
             href="/company"
-            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-5 md:py-2.5 md:text-[15px]"
+            className="rounded-md bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-5 md:py-2.5 md:text-[15px]"
           >
             Company
           </Link>
 
           <Link
             href="/demo"
-            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-5 md:py-2.5 md:text-[15px]"
+            className="rounded-md bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-5 md:py-2.5 md:text-[15px]"
           >
             Demo
           </Link>
 
           <button
             type="button"
-            className="rounded-lg bg-white/20 px-4 py-2 text-sm font-medium text-white ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-5 md:py-2.5 md:text-[15px]"
+            className="rounded-md bg-white/20 px-4 py-2 text-sm font-medium text-black ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-5 md:py-2.5 md:text-[15px]"
           >
             Login
           </button>
@@ -138,14 +145,14 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Email capture, pinned near the bottom */}
+      {/* Email capture, pinned near the bottom of the hero */}
       <div
-        className="fixed inset-x-0 z-30 flex justify-center px-4"
+        className="absolute inset-x-0 z-30 flex justify-center px-4"
         style={{ bottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
-      >
+        >
         <form
           onSubmit={handleSubmit}
-          className="flex w-full max-w-[420px] items-center gap-1 rounded-lg bg-white/10 p-1.5 ring-1 ring-white/25 backdrop-blur-md md:max-w-[460px]"
+          className="flex w-full max-w-[420px] items-center gap-1 rounded-md bg-white/10 p-1.5 ring-1 ring-white/25 backdrop-blur-md md:max-w-[460px]"
         >
           <input
             type="email"
@@ -158,12 +165,18 @@ export default function Home() {
           />
           <button
             type="submit"
-            className="shrink-0 rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-neutral-900 transition hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-neutral-900 md:px-6 md:py-3 md:text-[15px]"
+            className="shrink-0 rounded-md bg-white px-5 py-2.5 text-sm font-medium text-neutral-900 transition hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-neutral-900 md:px-6 md:py-3 md:text-[15px]"
           >
             Get started
           </button>
         </form>
       </div>
+      </section>
+
+      <AdminGrid />
+      <DetailSection />
+      <FAQ />
+      <Footer />
     </main>
   );
 }

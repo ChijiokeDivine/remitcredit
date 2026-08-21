@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Fraunces, Inter, Google_Sans } from "next/font/google";
 import "./globals.css";
 import React from "react";
 
@@ -20,6 +20,17 @@ const inter = Inter({
   display: "swap",
 });
 
+// Sans-serif face for the hero headline ("You're a doctor. Not a machine.")
+const googleSans = Google_Sans({
+  subsets: ["latin"],
+  fallback: ["Inter"],
+  variable: "--font-google-sans",
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
+
+
+
 export const metadata: Metadata = {
   title: "Lassie — You're a doctor. Not a machine.",
   description: "Let Lassie do your admin.",
@@ -31,7 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${fraunces.variable} ${inter.variable} font-[family-name:var(--font-sans)] antialiased`}
+        className={`${fraunces.variable} ${inter.variable} ${googleSans.variable} font-[family-name:var(--font-sans)] antialiased`}
       >
         {children}
       </body>
