@@ -1,6 +1,8 @@
 // test/CreditDecisionEngine.test.ts
+import "@nomicfoundation/hardhat-ethers";
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import hre from "hardhat";
+const { ethers } = hre;
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 

@@ -34,5 +34,5 @@
     "src/**/*.tsx" , // Add this line
     "src/**/*.d.ts"
   ],
-  "exclude": ["node_modules", "backend", "worker", "contracts", "scripts", "dist"]
+  "exclude": ["node_modules", "backend", "worker", "dist"]
 }

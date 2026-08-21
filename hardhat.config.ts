@@ -1,5 +1,6 @@
 // hardhat.config.ts
 import "@nomicfoundation/hardhat-toolbox";
+import "@nomicfoundation/hardhat-ethers"; // <--- ADD THIS LINE
 import { HardhatUserConfig } from "hardhat/config";
 import * as dotenv from "dotenv";
 

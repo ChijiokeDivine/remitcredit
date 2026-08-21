@@ -14,9 +14,10 @@
 // If the actual mocks differ (e.g. verifyBatch keys off a single hash, or
 // setVerified takes a hash instead of raw bytes), adjust submitBatch() below
 // accordingly — everything downstream of it doesn't depend on that detail.
-
+import "@nomicfoundation/hardhat-ethers";
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import hre from "hardhat";
+const { ethers } = hre;
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("RemitCredit — RemittanceMicroLoan (extended)", () => {

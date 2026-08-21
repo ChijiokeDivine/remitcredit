@@ -10,8 +10,12 @@
 // mainnet, set LOAN_TOKEN_ADDRESS_MAINNET in .env to a real asset instead
 // (e.g. a bridged/native stablecoin on Creditcoin) — the script will use it
 // if present rather than deploying a mock.
-import { ethers, network } from "hardhat";
+import "@nomicfoundation/hardhat-ethers";
+import hre from "hardhat"; 
 import * as dotenv from "dotenv";
+
+// Destructure both ethers and network from the Hardhat Runtime Environment (hre)
+const { ethers, network } = hre;
 
 dotenv.config();
 

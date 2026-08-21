@@ -6,7 +6,11 @@
 // at all — any ERC20 (or native) transfer on a supported source chain is
 // provable as-is. Usage:
 //   npx hardhat run scripts/deployMocks.ts --network sepolia
-import { ethers, network } from "hardhat";
+import "@nomicfoundation/hardhat-ethers";
+import hre from "hardhat";
+
+const { ethers, network } = hre;
+
 
 async function main() {
   const [deployer] = await ethers.getSigners();
