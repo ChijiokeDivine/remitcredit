@@ -31,8 +31,8 @@
     "scripts/**/*.ts", 
     "test/**/*.ts",
     "src/**/*.ts",   // Add this line
-    "src/**/*.tsx"  // Add this line
-    
+    "src/**/*.tsx" , // Add this line
+    "src/**/*.d.ts"
   ],
-  "exclude": ["node_modules", "backend", "worker", "contracts", "scripts", "test", "dist"]
+  "exclude": ["node_modules", "backend", "worker", "contracts", "scripts", "dist"]
 }

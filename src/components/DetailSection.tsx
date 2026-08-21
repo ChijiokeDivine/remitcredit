@@ -79,7 +79,7 @@ export default function DetailSection() {
         </div>
 
         {/* Content */}
-        <div className="relative flex min-h-[520px] flex-col bg-[#f5f2e9] px-8 py-12 lg:min-h-[calc(100vh-40px)] lg:px-14 xl:px-20">
+        <div className="relative flex md:min-h-[520px] min-h-[400px] flex-col bg-[#f5f2e9] px-8 py-12 lg:min-h-[calc(100vh-40px)] lg:px-14 xl:px-20">
           <div className="flex justify-center lg:justify-end">
             <h2 className="max-w-[580px] text-center font-[family-name:var(--font-serif)] text-[clamp(2.6rem,4.6vw,7rem)] font-black uppercase leading-[0.82] tracking-[-0.065em] lg:text-right">
               How it works

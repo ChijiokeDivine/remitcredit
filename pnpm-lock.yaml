@@ -11,6 +11,9 @@ importers:
       '@gluwa/usc-sdk':
         specifier: ^0.18.0
         version: 0.18.0
+      '@lordicon/element':
+        specifier: ^2.3.1
+        version: 2.3.1
       '@tailwindcss/postcss':
         specifier: ^4.3.3
         version: 4.3.3
@@ -423,6 +426,12 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
+
+  '@lordicon/element@2.3.1':
+    resolution: {integrity: sha512-thmlosWLpOy+et/4Eu+0fM09u6gEn7ToQ+fBi7r/mS1F5N020yQJJEoUZJQ6RdZVloVSIlfOSxZgdE8GKu+GxQ==}
+
+  '@lordicon/web@1.2.1':
+    resolution: {integrity: sha512-16djHCP6w6+y5WuCEl6D3I2tZhzLqcVhdSR8jynzxIrF384t0RTL2zNYEZhjCjNbw5taN0pbdqlqH8vJ1+spQg==}
 
   '@next/env@16.3.1':
     resolution: {integrity: sha512-35G3xwkQUb2oETSDjFXGrVugknoayLFBh7vSE+yAcl9IP2zT9wyGwq7297AYHR11kJld807t5f8AJBs6WBzXsQ==}
@@ -3406,6 +3415,12 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@lordicon/element@2.3.1':
+    dependencies:
+      '@lordicon/web': 1.2.1
+
+  '@lordicon/web@1.2.1': {}
 
   '@next/env@16.3.1': {}
 
