@@ -10,34 +10,34 @@ type FAQItem = {
 
 const FAQS: FAQItem[] = [
   {
-    question: "What exactly does Lassie handle for me?",
+    question: "What is RemitCredit?",
     answer:
-      "Lassie takes care of the repetitive admin that eats your day — insurance calls, claim follow-ups, appointment recalls, billing questions, and routine patient outreach — so you can stay focused on actual care.",
+      "RemitCredit turns verified crypto remittances into a credit line. No bank statements. No self-reported income. No human underwriter.",
   },
   {
-    question: "Does it work with my existing practice software?",
+    question: "How does verification work?",
     answer:
-      "Yes. Lassie connects with the major practice management systems and can also work alongside whatever tools you already use. Setup is lightweight and doesn’t require ripping out your current stack.",
+      "We use Creditcoin’s Attestcoin Protocol to cryptographically prove each transfer happened. The proof is checked on-chain in the same transaction. No bridge. No third-party oracle.",
   },
   {
-    question: "How does the voice calling actually work?",
+    question: "Do I need a bank account or credit history?",
     answer:
-      "Lassie places real outbound calls, follows natural conversation flows, and handles common objections or hold times. You get a clean summary after every call so nothing falls through the cracks.",
+      "No. Your credit line is built only from proven on-chain remittances. Traditional credit files and bank statements are not required.",
   },
   {
-    question: "Is patient data secure?",
+    question: "Who can use it?",
     answer:
-      "Absolutely. We are built with HIPAA compliance in mind, use encrypted channels, and never train models on your practice data. Your information stays yours.",
+      "Anyone who regularly receives stablecoin or crypto transfers from family or partners abroad and has a wallet they control.",
   },
   {
-    question: "How long does it take to get started?",
+    question: "Does the sender need to do anything special?",
     answer:
-      "Most practices are live within a few days. We handle the initial configuration, train the system on your preferred scripts and tone, and then you simply start assigning tasks.",
+      "No. They send the same way they always have. You simply declare their wallet addresses once. After that, everything is automatic.",
   },
   {
-    question: "What if Lassie can’t resolve something?",
+    question: "How is the credit limit decided?",
     answer:
-      "It escalates cleanly. You’ll receive a clear handoff with context so your team can finish the conversation without starting from zero.",
+      "A transparent rules engine looks at transfer count, total inflow, regularity, and recency. The limit updates the moment new verified data arrives. You can see exactly why.",
   },
 ];
 

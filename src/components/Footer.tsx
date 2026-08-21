@@ -14,7 +14,7 @@ export default function Footer() {
   return (
     // This wrapper supplies the correct color for the corners outside the radius
     <div className="bg-[#F3F5F4]">
-      <footer className="relative w-full rounded-t-[100px] bg-[#2F5D50] pt-20 pb-0 md:pt-28">
+      <footer className="relative w-full rounded-t-[50px] md:rounded-t-[100px] bg-[#2F5D50] pt-20 pb-0 md:pt-28">
         <div className="mx-auto max-w-[1600px] px-6 md:px-10">
           {/* Top minimal row */}
           <div className="flex flex-col items-start justify-between gap-10 sm:flex-row sm:items-center">
@@ -23,13 +23,9 @@ export default function Footer() {
               href="/"
               className="group inline-flex items-center gap-2.5 transition-opacity hover:opacity-80"
             >
-              <Flower2
-                className="h-5 w-5 text-white"
-                strokeWidth={2}
-                aria-hidden="true"
-              />
-              <span className="font-[family-name:var(--font-serif)] text-xl tracking-tight text-white">
-                Lassie
+            
+              <span className="font-[family-name:var(--font-serif)]  text-xl tracking-tight text-white">
+                RemitCredit
               </span>
             </Link>
 
@@ -53,10 +49,10 @@ export default function Footer() {
           {/* Copyright */}
           <div className="mt-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <p className="text-sm text-white/40">
-              © {new Date().getFullYear()} Lassie. All rights reserved.
+              © {new Date().getFullYear()} RemitCredit. All rights reserved.
             </p>
             <p className="text-sm text-white/40">
-              Built for the people who care for others.
+              Verified remittances. Real credit.
             </p>
           </div>
         </div>
@@ -74,7 +70,7 @@ export default function Footer() {
               text-white/60
             "
           >
-            Lassie
+            RemitCredit
           </p>
         </div>
       </footer>

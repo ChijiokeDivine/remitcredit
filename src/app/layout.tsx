@@ -32,8 +32,9 @@ const googleSans = Google_Sans({
 
 
 export const metadata: Metadata = {
-  title: "Lassie — You're a doctor. Not a machine.",
-  description: "Let Lassie do your admin.",
+  title: "RemitCredit — Verified remittances. Real credit.",
+  description:
+    "Turn your crypto remittance history into a credit line. No bank statements. No human underwriter.",
 };
 
 export default function RootLayout({

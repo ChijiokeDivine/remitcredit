@@ -3,7 +3,7 @@ import Image from "next/image";
 export default function DetailSection() {
   return (
     <section className="relative w-full bg-[#f5f2e9] px-5 py-5">
-      {/* STUDENTS */}
+      {/* RECIPIENTS */}
       <div className="sticky top-0 z-10 mx-auto grid min-h-[calc(100vh-40px)] w-full grid-cols-1 overflow-hidden rounded-[20px] lg:grid-cols-[1.03fr_1fr]">
         {/* Image */}
         <div className="relative min-h-[520px] overflow-hidden rounded-[20px] lg:min-h-[calc(100vh-80px)]">
@@ -19,22 +19,22 @@ export default function DetailSection() {
 
         {/* Content */}
         <div className="relative flex min-h-[520px] flex-col bg-[#f5f2e9] px-8 py-12 lg:min-h-[calc(100vh-40px)] lg:px-14 xl:px-20">
-          <div className="flex justify-end">
-            <h2 className="max-w-[580px] text-right font-[family-name:var(--font-serif)] text-[clamp(4rem,5vw,7rem)] font-black uppercase leading-[0.82] tracking-[-0.065em]">
-              Students
+          <div className="flex justify-center lg:justify-end">
+            <h2 className="max-w-[580px] text-center font-[family-name:var(--font-serif)] text-[clamp(2.6rem,4.6vw,7rem)] font-black uppercase leading-[0.82] tracking-[-0.065em] lg:text-right">
+              Recipients
             </h2>
           </div>
 
-          <div className="mt-auto flex justify-end pt-10">
-            <p className="max-w-[380px] text-right font-[family-name:var(--font-google-sans)] text-base leading-[1.35] text-black/70">
-              The things you love, made better. Fresh ingredients, familiar
-              flavors, and more of what makes every meal.
+          <div className="flex justify-center pt-10 lg:justify-end">
+            <p className="max-w-[380px] text-center font-[family-name:var(--font-google-sans)] text-base leading-[1.35] text-black/70 lg:text-right">
+              You already receive regular support from family abroad.
+              RemitCredit turns that history into a credit line you can actually use.
             </p>
           </div>
         </div>
       </div>
 
-      {/* FREELANCERS */}
+      {/* SENDERS */}
       <div className="sticky top-0 z-20 mx-auto grid min-h-[calc(100vh-40px)] w-full grid-cols-1 overflow-hidden rounded-[20px] lg:grid-cols-[1.03fr_1fr]">
         {/* Image */}
         <div className="relative min-h-[520px] overflow-hidden rounded-[20px] lg:min-h-[calc(100vh-80px)]">
@@ -49,22 +49,23 @@ export default function DetailSection() {
 
         {/* Content */}
         <div className="relative flex min-h-[520px] flex-col bg-[#f5f2e9] px-8 py-12 lg:min-h-[calc(100vh-40px)] lg:px-14 xl:px-20">
-          <div className="flex justify-end">
-            <h2 className="max-w-[580px] text-right font-[family-name:var(--font-serif)] text-[clamp(4rem,5vw,7rem)] font-black uppercase leading-[0.82] tracking-[-0.065em]">
-              Freelancers
+          <div className="flex justify-center lg:justify-end">
+            <h2 className="max-w-[580px] text-center font-[family-name:var(--font-serif)] text-[clamp(2.6rem,4.6vw,7rem)] font-black uppercase leading-[0.82] tracking-[-0.065em] lg:text-right">
+              Senders
             </h2>
           </div>
 
-          <div className="mt-auto flex justify-end pt-10">
-            <p className="max-w-[380px] text-right font-[family-name:var(--font-google-sans)] text-base leading-[1.35] text-black/70">
-              The things you love, made better. Fresh ingredients, familiar
-              flavors, and more of what makes every meal.
+          <div className="flex justify-center pt-10 lg:justify-end">
+            <p className="max-w-[380px] text-center font-[family-name:var(--font-google-sans)] text-base leading-[1.35] text-black/70 lg:text-right">
+              Keep sending exactly as you do now.
+              Your transfers quietly build credit for the person you support.
+              No new steps. No new apps.
             </p>
           </div>
         </div>
       </div>
 
-      {/* FOR ANYONE */}
+      {/* HOW IT WORKS */}
       <div className="sticky top-0 z-30 mx-auto grid min-h-[calc(100vh-40px)] w-full grid-cols-1 overflow-hidden rounded-[20px] lg:grid-cols-[1.03fr_1fr]">
         {/* Image */}
         <div className="relative min-h-[520px] overflow-hidden rounded-[20px] lg:min-h-[calc(100vh-80px)]">
@@ -79,16 +80,17 @@ export default function DetailSection() {
 
         {/* Content */}
         <div className="relative flex min-h-[520px] flex-col bg-[#f5f2e9] px-8 py-12 lg:min-h-[calc(100vh-40px)] lg:px-14 xl:px-20">
-          <div className="flex justify-end">
-            <h2 className="max-w-[580px] text-right font-[family-name:var(--font-serif)] text-[clamp(4rem,5vw,7rem)] font-black uppercase leading-[0.82] tracking-[-0.065em]">
-              For Anyone
+          <div className="flex justify-center lg:justify-end">
+            <h2 className="max-w-[580px] text-center font-[family-name:var(--font-serif)] text-[clamp(2.6rem,4.6vw,7rem)] font-black uppercase leading-[0.82] tracking-[-0.065em] lg:text-right">
+              How it works
             </h2>
           </div>
 
-          <div className="mt-auto flex justify-end pt-10">
-            <p className="max-w-[380px] text-right font-[family-name:var(--font-google-sans)] text-base leading-[1.35] text-black/70">
-              The things you love, made better. Fresh ingredients, familiar
-              flavors, and more of what makes every meal.
+          <div className="flex justify-center pt-10 lg:justify-end">
+            <p className="max-w-[380px] text-center font-[family-name:var(--font-google-sans)] text-base leading-[1.35] text-black/70 lg:text-right">
+              Declare senders. We detect and prove every transfer.
+              A transparent engine sets your limit.
+              You borrow when you need it.
             </p>
           </div>
         </div>

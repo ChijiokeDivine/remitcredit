@@ -1,60 +1,53 @@
-import {
-  PhoneOutgoing,
-  CalendarClock,
-  Receipt,
-  FileText,
-  BadgeCheck,
-  MessageSquare,
-  type LucideIcon,
-} from "lucide-react";
+"use client";
+
+import Image from "next/image";
 
 type AdminCard = {
-  icon: LucideIcon;
   title: string;
   description: string;
   example: string;
+  // Optional media – provide either image or video (not both)
+  image?: string;
+  video?: string;
+  mediaAlt?: string;
 };
 
-// Six categories of practice admin Lassie handles. Each "example" line
-// echoes the rotating proof-tag in the hero — same voice, different scene.
 const CARDS: AdminCard[] = [
   {
-    icon: PhoneOutgoing,
-    title: "Insurance & claims",
+    title: "Declare senders",
     description:
-      "Calls payers, files claims, and chases denials until they're paid.",
-    example: "Called Cigna for claim status",
+      "Name the wallets that send you support. One or many. Change them anytime.",
+    example: "Added mom’s wallet in London",
   },
   {
-    icon: CalendarClock,
-    title: "Scheduling & recalls",
+    title: "Automatic detection",
     description:
-      "Fills gaps in the calendar and books recall and hygiene visits.",
-    example: "Booked 8 hygiene recalls",
+      "We watch the chain. Every matching transfer is seen the moment it lands.",
+    example: "Detected $180 from sibling",
   },
   {
-    icon: Receipt,
-    title: "Billing & bookkeeping",
-    description: "Reconciles charges, posts payments, and closes the books.",
-    example: "Closed the books for March",
+    title: "Cryptographic proof",
+    description:
+      "Each transfer is proven on Creditcoin with Attestcoin. No bridge. No oracle to trust.",
+    example: "Proof verified on-chain",
   },
   {
-    icon: FileText,
-    title: "Referrals & records",
-    description: "Sends referrals out and chases records requests down.",
-    example: "Faxed records to Dr. Patel",
+    title: "Verified history",
+    description:
+      "A permanent, on-chain record of every proven remittance. Yours alone.",
+    example: "14 transfers recorded",
   },
   {
-    icon: BadgeCheck,
-    title: "Credentialing",
-    description: "Keeps licenses, CE credits, and payer files current.",
-    example: "Renewed the malpractice policy",
+    title: "Instant decision",
+    description:
+      "A clear rules engine sets your limit the second new data arrives. No human review.",
+    example: "Limit raised to $1,400",
   },
   {
-    icon: MessageSquare,
-    title: "Patient follow-up",
-    description: "Reminds, follows up, and closes the loop after every visit.",
-    example: "Reminded 12 patients about labs",
+    title: "Draw & repay",
+    description:
+      "Borrow against your line. Repay over time. Your limit grows with more history.",
+    example: "Drew $600 for inventory",
   },
 ];
 
@@ -64,26 +57,21 @@ export default function AdminGrid() {
       <div className="mx-auto w-full max-w-[1600px]">
         {/* Section heading */}
         <div className="mx-auto max-w-3xl text-center">
-         
           <h2 className="mt-4 font-[family-name:var(--font-google-sans)] text-[36px] font-normal leading-[1.1] tracking-[-0.01em] text-[#10202E] sm:text-[44px] md:text-[4rem]">
-            Six kinds of busywork.
+            Six things that finally count.
             <br />
-            <span className="">Zero on your plate.</span>
+            <span>Zero paperwork.</span>
           </h2>
         </div>
 
-        {/* 3-across on desktop (3 stacked on 3), collapses to 1 column on mobile */}
+        {/* Cards */}
         <div className="mt-16 grid grid-cols-1 gap-3 sm:grid-cols-2 md:mt-20 lg:grid-cols-3">
-          {CARDS.map(({ icon: Icon, title, description, example }) => (
+          {CARDS.map(({ title, description, image, video, mediaAlt }) => (
             <div
               key={title}
-              className="group flex min-h-[280px] flex-col rounded-[28px]  bg-white p-8 transition duration-300 md:min-h-[340px] md:p-10"
+              className="group flex min-h-[280px] flex-col rounded-[28px] bg-white p-8 transition duration-300 md:min-h-[440px] md:p-10"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#2F5D50]/10 text-[#2F5D50] transition duration-300 group-hover:bg-[#2F5D50] group-hover:text-white md:h-14 md:w-14">
-                <Icon className="h-6 w-6" strokeWidth={1.75} aria-hidden="true" />
-              </div>
-
-              <h3 className="mt-6 text-xl font-semibold text-[#10202E] md:text-[22px]">
+              <h3 className="text-xl font-semibold text-[#10202E] md:text-[22px]">
                 {title}
               </h3>
 
@@ -91,14 +79,29 @@ export default function AdminGrid() {
                 {description}
               </p>
 
-              <div className="mt-auto flex items-center gap-2  pt-5 text-sm text-[#4B5B66]">
-                <Icon
-                  className="h-3.5 w-3.5 shrink-0 text-[#2F5D50]"
-                  strokeWidth={1.75}
-                  aria-hidden="true"
-                />
-                <span className="truncate font-medium">{example}</span>
-              </div>
+              {/* Media area – appears only when image or video is provided */}
+              {(image || video) && (
+                <div className="relative mt-8 aspect-[4/3] w-full overflow-hidden rounded-2xl bg-[#F3F5F4]">
+                  {video ? (
+                    <video
+                      src={video}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Image
+                      src={image!}
+                      alt={mediaAlt || title}
+                      fill
+                      className="object-cover transition duration-500 group-hover:scale-[1.03]"
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                    />
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
