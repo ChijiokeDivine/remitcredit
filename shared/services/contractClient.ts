@@ -59,6 +59,10 @@ export class RemitCreditClient {
     };
   }
 
+  async getDeclaredSenders(borrower: string): Promise<string[]> {
+    return this.loan.getDeclaredSenders(borrower);
+  }
+
   async getAvailableCredit(address: string): Promise<string> {
     const value = await this.loan.availableCredit(address);
     return value.toString();
@@ -106,6 +110,11 @@ export class RemitCreditClient {
   async registerBorrower(declaredSender: string): Promise<TransactionResponse> {
     const contract = this.loan.connect(this.requireSigner()) as Contract;
     return contract.registerBorrower(declaredSender);
+  }
+
+  async addDeclaredSender(sender: string): Promise<TransactionResponse> {
+    const contract = this.loan.connect(this.requireSigner()) as Contract;
+    return contract.addDeclaredSender(sender);
   }
 
   async submitRemittanceProof(

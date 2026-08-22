@@ -30,9 +30,17 @@
     "backend/**/*.ts", 
     "scripts/**/*.ts", 
     "test/**/*.ts",
-    "src/**/*.ts",   // Add this line
-    "src/**/*.tsx" , // Add this line
+    "src/**/*.ts",
+    "src/**/*.tsx" ,
     "src/**/*.d.ts"
   ],
-  "exclude": ["node_modules", "backend", "worker", "dist"]
+  "exclude": ["node_modules", "backend", "worker", "dist"],
+  
+  // Add this section to fix the Hardhat execution error:
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs",
+      "moduleResolution": "node"
+    }
+  }
 }

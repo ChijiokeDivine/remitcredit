@@ -8,12 +8,14 @@
 
 export const REMITTANCE_MICRO_LOAN_ABI = [
   "function registerBorrower(address declaredSender) external",
+  "function addDeclaredSender(address sender) external",
   "function submitRemittanceProof(address borrower, uint32 chainKey, uint64 blockHeight, bytes encodedTx, bytes merkleProof, bytes continuityProof, address claimedSender, uint256 claimedAmount, uint64 claimedTimestamp, bytes32 sourceTxHash) external",
   "function submitRemittanceProofBatch(address borrower, uint32 chainKey, uint64[] blockHeights, bytes[] encodedTxs, bytes[] merkleProofs, bytes continuityProof, address[] claimedSenders, uint256[] claimedAmounts, uint64[] claimedTimestamps, bytes32[] sourceTxHashes) external",
   "function requestCreditReview(address borrower) external",
   "function requestLoan(uint256 amount) external",
   "function repay(uint256 amount) external",
   "function getBorrower(address borrower) external view returns (tuple(bool registered, address declaredSender, bool eligible, uint256 creditLimit, uint16 riskScoreBps, uint256 outstandingPrincipal, uint64 lastReviewedAt))",
+  "function getDeclaredSenders(address borrower) external view returns (address[])",
   "function availableCredit(address borrower) external view returns (uint256)",
   "event BorrowerRegistered(address indexed borrower, address indexed declaredSender)",
   "event RemittanceVerified(address indexed borrower, address indexed sender, uint256 amount, uint64 sourceTimestamp, bytes32 sourceTxHash)",

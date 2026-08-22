@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { defineElement } from "@lordicon/element";
 import Image from "next/image";
 
 type AdminCard = {
@@ -74,7 +73,9 @@ const CARDS: AdminCard[] = [
 
 export default function AdminGrid() {
   useEffect(() => {
-    defineElement();
+    import("@lordicon/element").then(({ defineElement }) => {
+      defineElement();
+    });
   }, []);
 
   return (
