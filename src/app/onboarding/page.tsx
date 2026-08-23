@@ -33,18 +33,18 @@ export default function OnboardingPage() {
     }
     setLoading(true);
     try {
-      await registerBorrower(address, valid);
+      const result = await registerBorrower(address, valid);
       setSuccess(true);
-      setTimeout(() => router.push("/dashboard"), 1200);
+      setTimeout(() => router.push("/dashboard"), Math.max(2500, 1200));
+      void result;
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === 500) {
-          setSuccess(true);
-          setTimeout(() => router.push("/dashboard"), 1200);
-          return;
-        }
-        setError(err.message);
-      } else setError("Something went wrong. Try again.");
+        setError(`${err.status ? `[${err.status}] ` : ""}${err.message || "Registration failed."}`);
+      } else if (err instanceof Error) {
+        setError(err.message || "Something went wrong. Try again.");
+      } else {
+        setError("Something went wrong. Try again.");
+      }
     } finally {
       setLoading(false);
     }

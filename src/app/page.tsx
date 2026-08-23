@@ -2,15 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Flower2, PhoneOutgoing, Terminal, Copy, type LucideIcon } from "lucide-react";
 import AdminGrid from "../components/AdminGrid";
 import DetailSection from "../components/DetailSection";
 import FAQ from "../components/FAQ";
 import Footer from "../components/Footer";
-import { useWallet } from "../lib/wallet";
-import { getBorrower } from "../lib/api";
+
+
 
 type Example = {
+
   label: string;
 };
 
@@ -49,6 +50,7 @@ function RotatingExample() {
         visible ? "opacity-100" : "opacity-0"
       }`}
     >
+
       <span className="text-sm font-medium md:text-[15px]">{label}</span>
     </div>
   );
@@ -56,9 +58,7 @@ function RotatingExample() {
 
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const router = useRouter();
-  const { address, connect, isConnecting } = useWallet();
-  const [navigating, setNavigating] = useState(false);
+  const [email, setEmail] = useState("");
 
   // Respect reduced-motion preferences by freezing the background video.
   useEffect(() => {
@@ -68,32 +68,12 @@ export default function Home() {
     }
   }, []);
 
-  /** Connect if needed → dashboard if already onboarded, else onboarding. */
-  async function handleLogin() {
-    setNavigating(true);
-    try {
-      let addr = address;
-      if (!addr) {
-        addr = await connect();
-      }
-      if (!addr) {
-        router.push("/onboarding");
-        return;
-      }
-      try {
-        const record = await getBorrower(addr);
-        router.push(record.registered ? "/dashboard" : "/onboarding");
-      } catch {
-        // Not registered (404) or API offline → onboarding
-        router.push("/onboarding");
-      }
-    } finally {
-      setNavigating(false);
-    }
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    // TODO: wire this up to your email capture endpoint / ESP.
+    console.log("submitted email:", email);
+    setEmail("");
   }
-
-  const busy = isConnecting || navigating;
-  const loginLabel = busy ? "Connecting…" : address ? "Dashboard" : "Login";
 
   return (
     <main className="relative w-full">
@@ -108,10 +88,7 @@ export default function Home() {
           poster="/hero-poster.jpg"
           className="absolute inset-0 h-full w-full object-cover"
         >
-          <source
-            src="/videos/9198272-hd_1920_1080_25fps.mp4"
-            type="video/mp4"
-          />
+          <source src="/videos/9198272-hd_1920_1080_25fps.mp4" type="video/mp4" />
         </video>
 
         {/* Darkening overlay for text legibility */}
@@ -124,9 +101,8 @@ export default function Home() {
               href="/"
               className="flex items-center gap-1.5 rounded-md bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white/90 md:px-5 md:py-2.5 md:text-[15px]"
             >
-              <span className="font-[family-name:var(--font-serif)] italic">
-                RemitCredit
-              </span>
+
+              <span className="font-[family-name:var(--font-serif)] italic">RemitCredit</span>
             </Link>
 
             <Link
@@ -143,14 +119,12 @@ export default function Home() {
               Demo
             </Link>
 
-            <button
-              type="button"
-              onClick={handleLogin}
-              disabled={busy}
-              className="hidden rounded-md bg-white/20 px-4 py-2 text-sm font-medium text-black ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-5 md:py-2.5 md:text-[15px] md:block"
+            <Link
+              href="/onboarding"
+              className="rounded-md bg-white/20 px-4 py-2 text-sm font-medium text-black ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-5 md:py-2.5 md:text-[15px] hidden md:block"
             >
-              {loginLabel}
-            </button>
+              Login
+            </Link>
           </nav>
         </header>
 
@@ -163,23 +137,27 @@ export default function Home() {
           </h1>
 
           <p className="mt-7 text-base font-medium text-white md:mt-8 md:text-xl">
-            Now they unlock real credit.
+          Now they unlock real credit.
           </p>
+
+          {/* <div className="mt-4">
+            <RotatingExample />
+          </div> */}
         </div>
 
-        {/* Login + rotating proof points, pinned near the bottom of the hero */}
-        <div className="absolute inset-x-0 z-30 flex justify-center px-4 bottom-72 md:bottom-[max(1.5rem,env(safe-area-inset-bottom))]">
+        {/* Email capture / login, pinned near the bottom of the hero */}
+        <div
+          className="absolute inset-x-0 z-30 flex justify-center px-4 bottom-72 md:bottom-[max(1.5rem,env(safe-area-inset-bottom))]"
+        >
           <div className="mt-4 flex flex-col items-center gap-3">
             <RotatingExample />
 
-            <button
-              type="button"
-              onClick={handleLogin}
-              disabled={busy}
-              className="block rounded-md bg-white/20 px-4 py-2 text-sm font-medium text-black ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-5 md:py-2.5 md:text-[15px] md:hidden"
+            <Link
+              href="/onboarding"
+              className="rounded-md bg-white/20 px-4 py-2 text-sm font-medium text-black ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-5 md:py-2.5 md:text-[15px] md:hidden block"
             >
-              {loginLabel}
-            </button>
+              Login
+            </Link>
           </div>
         </div>
       </section>

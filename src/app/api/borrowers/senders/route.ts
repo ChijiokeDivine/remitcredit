@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   try {
     const { borrower, sender } = senderSchema.parse(await req.json());
     const client = requireRelayerClient();
-    const tx = await client.addDeclaredSender(sender);
+    const tx = await client.addDeclaredSender(borrower, sender);
     const receipt = await tx.wait();
 
     activityStore.append({
@@ -39,7 +39,7 @@ export async function DELETE(req: Request) {
   try {
     const { borrower, sender } = senderSchema.parse(await req.json());
     const client = requireRelayerClient();
-    const tx = await client.removeDeclaredSender(sender);
+    const tx = await client.removeDeclaredSender(borrower, sender);
     const receipt = await tx.wait();
 
     activityStore.append({

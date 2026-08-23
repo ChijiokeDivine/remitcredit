@@ -19,7 +19,26 @@ export async function POST(req: Request) {
   try {
     const { borrower, amount } = amountSchema.parse(await req.json());
     const client = requireRelayerClient();
-    const tx = await client.repay(amount);
+
+    // repay() pulls tokens from `borrower` via safeTransferFrom, so the
+    // borrower must have approved the loan contract from their own wallet
+    // first. Check the allowance up front so a missing approval surfaces
+    // as a clear 400 instead of an on-chain revert.
+    const allowance: bigint = await client.loanToken.allowance(
+      borrower,
+      await client.loan.getAddress()
+    );
+    if (allowance < BigInt(amount)) {
+      throw new ApiError(
+        400,
+        `Borrower has not approved enough loan-token allowance to repay this amount. ` +
+          `They must call approve() on the loan token from their own wallet first.`
+      );
+    }
+
+    // requestLoan/repay are relayer-gated on-chain and take `borrower`
+    // explicitly — the relayer wallet only authorizes and pays gas.
+    const tx = await client.repay(borrower, amount);
     const receipt = await tx.wait();
     const updated = await client.getBorrower(borrower);
 

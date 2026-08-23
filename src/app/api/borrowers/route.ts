@@ -21,17 +21,31 @@ export async function POST(req: Request) {
     const { borrower, declaredSenders } = registerSchema.parse(body);
 
     const client = requireRelayerClient();
-    const tx = await client.registerBorrower(declaredSenders);
-    const receipt = await tx.wait();
+
+    const [firstSender, ...extraSenders] = declaredSenders;
+
+    // registerBorrower/addDeclaredSender are relayer-gated on-chain and take
+    // `borrower` explicitly — the relayer wallet only authorizes and pays
+    // gas, it is never the on-chain borrower identity.
+    const registerTx = await client.registerBorrower(borrower, firstSender);
+    const registerReceipt = await registerTx.wait();
+
+    const txHashes: string[] = [registerReceipt?.hash ?? registerTx.hash];
+
+    for (const sender of extraSenders) {
+      const addTx = await client.addDeclaredSender(borrower, sender);
+      const addReceipt = await addTx.wait();
+      txHashes.push(addReceipt?.hash ?? addTx.hash);
+    }
 
     activityStore.append({
       borrower,
       type: "borrower_registered",
-      data: { declaredSenders, txHash: receipt?.hash ?? tx.hash },
+      data: { declaredSenders, txHash: txHashes[0], txHashes },
     });
 
     return json(
-      { borrower, declaredSenders, txHash: receipt?.hash ?? tx.hash },
+      { borrower, declaredSenders, txHash: txHashes[0], txHashes },
       201
     );
   } catch (err) {

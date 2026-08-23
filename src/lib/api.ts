@@ -47,6 +47,7 @@ export type BorrowerRecord = {
 
 export type CreditDecision = {
   borrower: string;
+  registered?: boolean;
   eligible: boolean;
   creditLimit: string;
   riskScoreBps: number;
@@ -72,6 +73,7 @@ export type CreditPreview = {
 
 export type LoanStatus = {
   borrower: string;
+  registered?: boolean;
   creditLimit: string;
   outstandingPrincipal: string;
   availableCredit: string;

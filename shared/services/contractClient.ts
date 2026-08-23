@@ -18,6 +18,12 @@ import {
 /// methods. Constructed once per process (worker or backend) with either a
 /// read-only provider or a signing wallet, depending on whether that
 /// process needs to submit transactions.
+///
+/// NOTE: registerBorrower / addDeclaredSender / removeDeclaredSender /
+/// requestLoan / repay are relayer-gated on-chain (onlyRelayer) and take an
+/// explicit `borrower` param — the signer wallet here is *only* the relayer
+/// paying gas and authorizing the call, never the on-chain borrower
+/// identity itself. Always pass the real borrower address explicitly.
 export class RemitCreditClient {
   readonly provider: JsonRpcProvider;
   readonly signer?: Wallet;
@@ -46,10 +52,13 @@ export class RemitCreditClient {
   // ── Reads ────────────────────────────────────────────────────────
 
   async getBorrower(address: string): Promise<BorrowerRecord> {
-    const b = await this.loan.getBorrower(address);
+    const [b, declaredSenders] = await Promise.all([
+      this.loan.getBorrower(address),
+      this.loan.getDeclaredSenders(address),
+    ]);
     return {
       address,
-      declaredSender: b.declaredSender,
+      declaredSenders,
       registered: b.registered,
       eligible: b.eligible,
       creditLimit: b.creditLimit.toString(),
@@ -61,6 +70,10 @@ export class RemitCreditClient {
 
   async getDeclaredSenders(borrower: string): Promise<string[]> {
     return this.loan.getDeclaredSenders(borrower);
+  }
+
+  async isDeclaredSender(borrower: string, sender: string): Promise<boolean> {
+    return this.loan.isDeclaredSender(borrower, sender);
   }
 
   async getAvailableCredit(address: string): Promise<string> {
@@ -105,16 +118,21 @@ export class RemitCreditClient {
     return formatUnits(rawAmount, decimals);
   }
 
-  // ── Writes (require a signer) ──────────────────────────────────────
+  // ── Writes (require a signer authorized as the on-chain `relayer`) ──
 
-  async registerBorrower(declaredSender: string): Promise<TransactionResponse> {
+  async registerBorrower(borrower: string, declaredSender: string): Promise<TransactionResponse> {
     const contract = this.loan.connect(this.requireSigner()) as Contract;
-    return contract.registerBorrower(declaredSender);
+    return contract.registerBorrower(borrower, declaredSender);
   }
 
-  async addDeclaredSender(sender: string): Promise<TransactionResponse> {
+  async addDeclaredSender(borrower: string, sender: string): Promise<TransactionResponse> {
     const contract = this.loan.connect(this.requireSigner()) as Contract;
-    return contract.addDeclaredSender(sender);
+    return contract.addDeclaredSender(borrower, sender);
+  }
+
+  async removeDeclaredSender(borrower: string, sender: string): Promise<TransactionResponse> {
+    const contract = this.loan.connect(this.requireSigner()) as Contract;
+    return contract.removeDeclaredSender(borrower, sender);
   }
 
   async submitRemittanceProof(
@@ -144,13 +162,13 @@ export class RemitCreditClient {
     return contract.requestCreditReview(borrower);
   }
 
-  async requestLoan(amount: string): Promise<TransactionResponse> {
+  async requestLoan(borrower: string, amount: string): Promise<TransactionResponse> {
     const contract = this.loan.connect(this.requireSigner()) as Contract;
-    return contract.requestLoan(amount);
+    return contract.requestLoan(borrower, amount);
   }
 
-  async repay(amount: string): Promise<TransactionResponse> {
+  async repay(borrower: string, amount: string): Promise<TransactionResponse> {
     const contract = this.loan.connect(this.requireSigner()) as Contract;
-    return contract.repay(amount);
+    return contract.repay(borrower, amount);
   }
 }

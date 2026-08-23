@@ -18,7 +18,7 @@ export interface DecodedRemittance {
 
 export interface BorrowerRecord {
   address: string;
-  declaredSender: string;
+  declaredSenders: string[];
   registered: boolean;
   eligible: boolean;
   creditLimit: string; // decimal string, smallest unit

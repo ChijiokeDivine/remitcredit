@@ -20,26 +20,40 @@ import {CreditDecisionEngine} from "./CreditDecisionEngine.sol";
 ///         through CreditDecisionEngine, and runs a simple loan lifecycle
 ///         on top of that verified credit line.
 ///
-/// @dev Trust boundary, stated plainly: the precompile proves that the raw
-///      transaction bytes (`encodedTx`) were included in the claimed
-///      source-chain block and are attested on Creditcoin. This contract
-///      additionally requires `sourceTxHash == keccak256(encodedTx)`, so a
-///      caller cannot associate an arbitrary hash with a proof. Decoding
-///      `encodedTx` on-chain to trustlessly extract the ERC20 `Transfer`
+/// @dev Custody / auth model, stated plainly: RemitCredit's backend relays
+///      every write on behalf of end users through a single `relayer`
+///      wallet (set post-deploy via `setRelayer`) so users never need
+///      Creditcoin gas to onboard. Because of that, every borrower-scoped
+///      write below takes an explicit `borrower` parameter instead of
+///      relying on `msg.sender` identity, and is gated by `onlyRelayer`.
+///      `requestLoan` disburses to `borrower` (not the relayer), and
+///      `repay` pulls funds from `borrower` via `safeTransferFrom` — which
+///      means the borrower must separately `approve` this contract for
+///      their loan-token allowance from their own wallet before repaying;
+///      the relayer only pays gas and submits the call, it never custodies
+///      borrower funds.
+///
+///      Trust boundary for remittance proofs is unchanged: the precompile
+///      proves that the raw transaction bytes (`encodedTx`) were included
+///      in the claimed source-chain block and are attested on Creditcoin.
+///      This contract additionally requires
+///      `sourceTxHash == keccak256(encodedTx)`, so a caller cannot
+///      associate an arbitrary hash with a proof. Decoding `encodedTx`
+///      on-chain to trustlessly extract the ERC20 `Transfer`
 ///      sender/recipient/amount (RLP decode + calldata decode) is left as
 ///      a documented next step for time reasons — for now the off-chain
 ///      oracle worker (worker/src/submitProof.ts) decodes the transaction
 ///      itself before calling this function, and `claimedSender` is
-///      additionally constrained to match the borrower's pre-registered
-///      declared sender, which limits (but does not eliminate) what a
-///      misbehaving worker could misreport. Moving the decode on-chain
-///      closes that gap and is the natural next hardening step.
+///      additionally constrained to match one of the borrower's
+///      pre-registered declared senders, which limits (but does not
+///      eliminate) what a misbehaving worker could misreport. Moving the
+///      decode on-chain closes that gap and is the natural next hardening
+///      step.
 contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     struct Borrower {
         bool registered;
-        address declaredSender; // the family/remittance-sender wallet this borrower vouches for
         bool eligible;
         uint256 creditLimit;
         uint16 riskScoreBps;
@@ -52,14 +66,25 @@ contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
     CreditDecisionEngine public creditEngine;
     IERC20 public loanToken;
 
+    /// @notice The sole address authorized to submit relayed, borrower-scoped
+    ///         writes (registerBorrower, addDeclaredSender, removeDeclaredSender,
+    ///         requestLoan, repay). Set by the owner post-deploy.
+    address public relayer;
+
     mapping(address => Borrower) public borrowers;
+    mapping(address => address[]) private _declaredSenders;
+    // borrower => sender => index+1 in _declaredSenders[borrower] (0 = not present)
+    mapping(address => mapping(address => uint256)) private _declaredSenderIndex;
 
     event PrecompileUpdated(address indexed newPrecompile);
     event RegistryUpdated(address indexed newRegistry);
     event CreditEngineUpdated(address indexed newCreditEngine);
     event LoanTokenUpdated(address indexed newLoanToken);
+    event RelayerUpdated(address indexed previousRelayer, address indexed newRelayer);
 
     event BorrowerRegistered(address indexed borrower, address indexed declaredSender);
+    event DeclaredSenderAdded(address indexed borrower, address indexed sender);
+    event DeclaredSenderRemoved(address indexed borrower, address indexed sender);
     event RemittanceVerified(
         address indexed borrower,
         address indexed sender,
@@ -75,14 +100,23 @@ contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
 
     error NotRegistered();
     error AlreadyRegistered();
+    error NotRelayer();
     error ProofNotVerified();
     error TxHashMismatch();
-    error SenderNotDeclared(address claimed, address declared);
+    error SenderNotDeclared(address claimed);
+    error SenderAlreadyDeclared(address sender);
+    error SenderNotFound(address sender);
     error NotEligible();
     error CreditLimitExceeded(uint256 requested, uint256 available);
     error ZeroAmount();
+    error ZeroAddress();
     error RepayExceedsOutstanding(uint256 amount, uint256 outstanding);
     error InsufficientPoolLiquidity(uint256 requested, uint256 available);
+
+    modifier onlyRelayer() {
+        if (msg.sender != relayer) revert NotRelayer();
+        _;
+    }
 
     constructor(
         address initialOwner,
@@ -119,6 +153,14 @@ contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
         emit LoanTokenUpdated(address(_loanToken));
     }
 
+    /// @notice Point relayer-gated functions at the backend's relayer wallet.
+    ///         Must be called once after deploy before onboarding can work.
+    function setRelayer(address newRelayer) external onlyOwner {
+        if (newRelayer == address(0)) revert ZeroAddress();
+        emit RelayerUpdated(relayer, newRelayer);
+        relayer = newRelayer;
+    }
+
     function pause() external onlyOwner {
         _pause();
     }
@@ -141,21 +183,69 @@ contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
 
     // ── Borrower lifecycle ────────────────────────────────────────────
 
-    /// @notice A borrower declares which wallet their verified remittances
-    ///         must come from. This is the anchor that stops someone from
-    ///         "verifying" transfers from an arbitrary address they control.
-    function registerBorrower(address declaredSender) external {
-        if (borrowers[msg.sender].registered) revert AlreadyRegistered();
-        borrowers[msg.sender] = Borrower({
+    /// @notice Register `borrower` and record their first declared sender —
+    ///         the family/remittance-sender wallet(s) their verified
+    ///         remittances must come from. This is the anchor that stops
+    ///         someone from "verifying" transfers from an arbitrary address
+    ///         they control. Relayed on behalf of the user by the backend.
+    function registerBorrower(address borrower, address declaredSender) external onlyRelayer {
+        if (borrower == address(0) || declaredSender == address(0)) revert ZeroAddress();
+        if (borrowers[borrower].registered) revert AlreadyRegistered();
+
+        borrowers[borrower] = Borrower({
             registered: true,
-            declaredSender: declaredSender,
             eligible: false,
             creditLimit: 0,
             riskScoreBps: 0,
             outstandingPrincipal: 0,
             lastReviewedAt: 0
         });
-        emit BorrowerRegistered(msg.sender, declaredSender);
+
+        _addDeclaredSender(borrower, declaredSender);
+
+        emit BorrowerRegistered(borrower, declaredSender);
+    }
+
+    /// @notice Add another wallet `borrower` vouches remittances may come from.
+    function addDeclaredSender(address borrower, address sender) external onlyRelayer {
+        if (!borrowers[borrower].registered) revert NotRegistered();
+        _addDeclaredSender(borrower, sender);
+    }
+
+    /// @notice Remove a previously declared sender wallet.
+    function removeDeclaredSender(address borrower, address sender) external onlyRelayer {
+        if (!borrowers[borrower].registered) revert NotRegistered();
+
+        uint256 idxPlusOne = _declaredSenderIndex[borrower][sender];
+        if (idxPlusOne == 0) revert SenderNotFound(sender);
+
+        address[] storage senders = _declaredSenders[borrower];
+        uint256 idx = idxPlusOne - 1;
+        uint256 lastIdx = senders.length - 1;
+
+        if (idx != lastIdx) {
+            address lastSender = senders[lastIdx];
+            senders[idx] = lastSender;
+            _declaredSenderIndex[borrower][lastSender] = idx + 1;
+        }
+        senders.pop();
+        delete _declaredSenderIndex[borrower][sender];
+
+        emit DeclaredSenderRemoved(borrower, sender);
+    }
+
+    function _addDeclaredSender(address borrower, address sender) internal {
+        if (sender == address(0)) revert ZeroAddress();
+        if (_declaredSenderIndex[borrower][sender] != 0) revert SenderAlreadyDeclared(sender);
+
+        _declaredSenders[borrower].push(sender);
+        _declaredSenderIndex[borrower][sender] = _declaredSenders[borrower].length;
+
+        emit DeclaredSenderAdded(borrower, sender);
+    }
+
+    function _isDeclaredSender(address borrower, address sender) internal view returns (bool) {
+        return _declaredSenderIndex[borrower][sender] != 0;
     }
 
     // ── Attestcoin Protocol integration ──────────────────────────────
@@ -178,7 +268,7 @@ contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
     ) external whenNotPaused {
         Borrower storage b = borrowers[borrower];
         if (!b.registered) revert NotRegistered();
-        if (claimedSender != b.declaredSender) revert SenderNotDeclared(claimedSender, b.declaredSender);
+        if (!_isDeclaredSender(borrower, claimedSender)) revert SenderNotDeclared(claimedSender);
         if (sourceTxHash != keccak256(encodedTx)) revert TxHashMismatch();
 
         bool verified = precompile.verify(chainKey, blockHeight, encodedTx, merkleProof, continuityProof);
@@ -210,7 +300,7 @@ contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
 
         uint256 n = encodedTxs.length;
         for (uint256 i; i < n; ++i) {
-            if (claimedSenders[i] != b.declaredSender) revert SenderNotDeclared(claimedSenders[i], b.declaredSender);
+            if (!_isDeclaredSender(borrower, claimedSenders[i])) revert SenderNotDeclared(claimedSenders[i]);
             if (sourceTxHashes[i] != keccak256(encodedTxs[i])) revert TxHashMismatch();
         }
 
@@ -249,9 +339,12 @@ contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
 
     // ── Loan lifecycle ────────────────────────────────────────────────
 
-    function requestLoan(uint256 amount) external nonReentrant whenNotPaused {
+    /// @notice Disburse `amount` of loan tokens to `borrower` against their
+    ///         verified credit line. Relayed by the backend on the
+    ///         borrower's behalf; funds go to `borrower`, never to the relayer.
+    function requestLoan(address borrower, uint256 amount) external onlyRelayer nonReentrant whenNotPaused {
         if (amount == 0) revert ZeroAmount();
-        Borrower storage b = borrowers[msg.sender];
+        Borrower storage b = borrowers[borrower];
         if (!b.registered) revert NotRegistered();
         if (!b.eligible) revert NotEligible();
 
@@ -262,27 +355,41 @@ contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
         if (amount > poolBalance) revert InsufficientPoolLiquidity(amount, poolBalance);
 
         b.outstandingPrincipal += amount;
-        loanToken.safeTransfer(msg.sender, amount);
+        loanToken.safeTransfer(borrower, amount);
 
-        emit LoanDisbursed(msg.sender, amount, b.outstandingPrincipal);
+        emit LoanDisbursed(borrower, amount, b.outstandingPrincipal);
     }
 
-    function repay(uint256 amount) external nonReentrant whenNotPaused {
+    /// @notice Repay `amount` of `borrower`'s outstanding principal. Relayed
+    ///         by the backend; tokens are pulled from `borrower`'s own
+    ///         wallet via `safeTransferFrom`, so `borrower` must have
+    ///         `approve`d this contract for at least `amount` beforehand
+    ///         (a normal wallet-signed ERC20 approval, done once from the
+    ///         frontend — the relayer never custodies borrower funds).
+    function repay(address borrower, uint256 amount) external onlyRelayer nonReentrant whenNotPaused {
         if (amount == 0) revert ZeroAmount();
-        Borrower storage b = borrowers[msg.sender];
+        Borrower storage b = borrowers[borrower];
         if (!b.registered) revert NotRegistered();
         if (amount > b.outstandingPrincipal) revert RepayExceedsOutstanding(amount, b.outstandingPrincipal);
 
         b.outstandingPrincipal -= amount;
-        loanToken.safeTransferFrom(msg.sender, address(this), amount);
+        loanToken.safeTransferFrom(borrower, address(this), amount);
 
-        emit LoanRepaid(msg.sender, amount, b.outstandingPrincipal);
+        emit LoanRepaid(borrower, amount, b.outstandingPrincipal);
     }
 
     // ── Views ─────────────────────────────────────────────────────────
 
     function getBorrower(address borrower) external view returns (Borrower memory) {
         return borrowers[borrower];
+    }
+
+    function getDeclaredSenders(address borrower) external view returns (address[] memory) {
+        return _declaredSenders[borrower];
+    }
+
+    function isDeclaredSender(address borrower, address sender) external view returns (bool) {
+        return _isDeclaredSender(borrower, sender);
     }
 
     function availableCredit(address borrower) external view returns (uint256) {

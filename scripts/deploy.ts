@@ -88,12 +88,34 @@ async function main() {
   await setRecorderTx.wait();
   console.log("Registry recorder set to RemittanceMicroLoan.");
 
+  // 6. Authorize the backend's relayer wallet. registerBorrower, requestLoan,
+  //    repay, addDeclaredSender, and removeDeclaredSender are all gated
+  //    onlyRelayer on-chain — without this call every write from the
+  //    backend reverts with NotRelayer() the moment onboarding is tried.
+  //    Uses the same BACKEND_RELAYER_PRIVATE_KEY the backend itself reads
+  //    (see shared/config.ts) so the deployed relayer can never drift out
+  //    of sync with what the backend actually signs with.
+  const relayerPrivateKey = process.env.BACKEND_RELAYER_PRIVATE_KEY;
+  if (!relayerPrivateKey) {
+    throw new Error(
+      "BACKEND_RELAYER_PRIVATE_KEY is not set — refusing to finish deployment without " +
+        "authorizing a relayer. Every backend write (register/loan/repay/sender management) " +
+        "reverts with NotRelayer() until RemittanceMicroLoan.relayer() is set. " +
+        "Set BACKEND_RELAYER_PRIVATE_KEY in .env and re-run."
+    );
+  }
+  const relayerAddress = new ethers.Wallet(relayerPrivateKey).address;
+  const setRelayerTx = await loan.setRelayer(relayerAddress);
+  await setRelayerTx.wait();
+  console.log("Relayer authorized on RemittanceMicroLoan:", relayerAddress);
+
   console.log("\n=== Deployment summary ===");
   console.log("Network:                ", network.name);
   console.log("Loan token:              ", loanTokenAddress);
   console.log("RemittanceCreditRegistry:", await registry.getAddress());
   console.log("CreditDecisionEngine:    ", await engine.getAddress());
   console.log("RemittanceMicroLoan:     ", await loan.getAddress());
+  console.log("Relayer:                 ", relayerAddress);
   console.log("\nAdd these to your .env as:");
   const suffix = isMainnet ? "MAINNET" : "TESTNET";
   console.log(`REMITTANCE_MICRO_LOAN_ADDRESS_${suffix}=${await loan.getAddress()}`);

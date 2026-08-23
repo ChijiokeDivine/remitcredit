@@ -15,10 +15,10 @@ export async function GET(
 
     const client = getReadClient();
     const record = await client.getBorrower(borrower);
-    if (!record.registered) throw new ApiError(404, "Borrower not registered");
 
     return json({
       borrower,
+      registered: record.registered,
       eligible: record.eligible,
       creditLimit: record.creditLimit,
       riskScoreBps: record.riskScoreBps,

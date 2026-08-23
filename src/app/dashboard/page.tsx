@@ -28,7 +28,11 @@ export default function DashboardPage() {
       const results = await Promise.allSettled([
         getBorrower(address), getCredit(address), getLoan(address), getCreditPreview(address), getRemittances(address),
       ]);
-      setRegistered(results[0].status === "fulfilled");
+      if (results[0].status === "fulfilled") {
+        setRegistered(Boolean(results[0].value.registered));
+      } else {
+        setRegistered(null);
+      }
       if (results[1].status === "fulfilled") setCredit(results[1].value);
       if (results[2].status === "fulfilled") setLoan(results[2].value);
       if (results[3].status === "fulfilled") setPreview(results[3].value);
@@ -64,7 +68,24 @@ export default function DashboardPage() {
           <Card>
             <CardTitle>Complete onboarding</CardTitle>
             <CardDescription>Declare at least one remittance sender to start building credit.</CardDescription>
-            <Link href="/onboarding"><Button className="mt-6 w-full">Set up now <ArrowRight className="h-4 w-4" /></Button></Link>
+            <div className="mt-6 flex flex-col gap-2">
+              <Link href="/onboarding"><Button className="w-full">Set up now <ArrowRight className="h-4 w-4" /></Button></Link>
+              <Button variant="ghost" size="sm" onClick={load} loading={loading}>Refresh on-chain status</Button>
+            </div>
+          </Card>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (registered === null) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-md text-center animate-fade-up">
+          <Card>
+            <CardTitle>Checking on-chain status…</CardTitle>
+            <CardDescription>One moment while we confirm your registration.</CardDescription>
+            <Button className="mt-6 w-full" variant="outline" onClick={load} loading={loading}>Refresh</Button>
           </Card>
         </div>
       </AppShell>

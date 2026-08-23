@@ -55,7 +55,7 @@ export default function DemoPage() {
           ))}
         </div>
       </section>
-      <Footer />
+     
     </main>
   );
 }

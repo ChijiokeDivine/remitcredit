@@ -1,7 +1,8 @@
 // test/RemittanceMicroLoan.extended.test.ts
 //
 // Extends the existing RemittanceMicroLoan.test.ts with admin controls,
-// pausability, batch proof submission, and loan/repay edge cases.
+// relayer authorization, multi-sender management, pausability, batch proof
+// submission, and loan/repay edge cases.
 //
 // NOTE: MockAttestcoinBlockProver and MockStablecoin source isn't included
 // in what was reviewed here, so this file assumes (matching the naming and
@@ -14,6 +15,14 @@
 // If the actual mocks differ (e.g. verifyBatch keys off a single hash, or
 // setVerified takes a hash instead of raw bytes), adjust submitBatch() below
 // accordingly — everything downstream of it doesn't depend on that detail.
+//
+// IMPORTANT: this contract is relayer-gated. registerBorrower, addDeclaredSender,
+// removeDeclaredSender, requestLoan, and repay must all be called by whichever
+// address `loan.setRelayer(...)` points at, and all take an explicit `borrower`
+// param instead of relying on msg.sender. submitRemittanceProof(Batch) and
+// requestCreditReview remain open-caller — anyone can submit them on a
+// borrower's behalf, since they only ever act on data that's independently
+// verified (the precompile) or read-only (the registry).
 import "@nomicfoundation/hardhat-ethers";
 import { expect } from "chai";
 import hre from "hardhat";
@@ -22,8 +31,10 @@ import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
   let owner: HardhatEthersSigner;
+  let relayer: HardhatEthersSigner;
   let borrower: HardhatEthersSigner;
   let familySender: HardhatEthersSigner;
+  let secondSender: HardhatEthersSigner;
   let other: HardhatEthersSigner;
 
   let prover: any;
@@ -45,7 +56,7 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
   };
 
   beforeEach(async () => {
-    [owner, borrower, familySender, other] = await ethers.getSigners();
+    [owner, relayer, borrower, familySender, secondSender, other] = await ethers.getSigners();
 
     const Prover = await ethers.getContractFactory("MockAttestcoinBlockProver");
     prover = await Prover.deploy(owner.address);
@@ -69,6 +80,7 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
     );
 
     await registry.connect(owner).setRecorder(await loan.getAddress());
+    await loan.connect(owner).setRelayer(relayer.address);
 
     await token.connect(owner).mint(owner.address, ethers.parseUnits("10000", 6));
     await token.connect(owner).approve(await loan.getAddress(), ethers.parseUnits("10000", 6));
@@ -95,7 +107,7 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
   }
 
   async function makeEligibleBorrower() {
-    await loan.connect(borrower).registerBorrower(familySender.address);
+    await loan.connect(relayer).registerBorrower(borrower.address, familySender.address);
     const now = Math.floor(Date.now() / 1000);
     await submitFakeRemittance(ethers.parseUnits("100", 6), now - 60 * DAY, "el-1");
     await submitFakeRemittance(ethers.parseUnits("100", 6), now - 30 * DAY, "el-2");
@@ -151,6 +163,65 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
     });
   });
 
+  // ── Relayer authorization ─────────────────────────────────────────
+
+  describe("relayer authorization", () => {
+    it("only the owner can update the relayer address", async () => {
+      await expect(loan.connect(other).setRelayer(other.address)).to.be.revertedWithCustomError(
+        loan,
+        "OwnableUnauthorizedAccount"
+      );
+      await expect(loan.connect(owner).setRelayer(other.address))
+        .to.emit(loan, "RelayerUpdated")
+        .withArgs(relayer.address, other.address);
+      expect(await loan.relayer()).to.equal(other.address);
+    });
+
+    it("rejects setting the relayer to the zero address", async () => {
+      await expect(loan.connect(owner).setRelayer(ethers.ZeroAddress)).to.be.revertedWithCustomError(
+        loan,
+        "ZeroAddress"
+      );
+    });
+
+    it("rejects registerBorrower from anyone other than the relayer, including the borrower and the owner", async () => {
+      await expect(
+        loan.connect(borrower).registerBorrower(borrower.address, familySender.address)
+      ).to.be.revertedWithCustomError(loan, "NotRelayer");
+      await expect(
+        loan.connect(owner).registerBorrower(borrower.address, familySender.address)
+      ).to.be.revertedWithCustomError(loan, "NotRelayer");
+    });
+
+    it("rejects addDeclaredSender/removeDeclaredSender from a non-relayer", async () => {
+      await loan.connect(relayer).registerBorrower(borrower.address, familySender.address);
+      await expect(
+        loan.connect(borrower).addDeclaredSender(borrower.address, secondSender.address)
+      ).to.be.revertedWithCustomError(loan, "NotRelayer");
+      await expect(
+        loan.connect(borrower).removeDeclaredSender(borrower.address, familySender.address)
+      ).to.be.revertedWithCustomError(loan, "NotRelayer");
+    });
+
+    it("rejects requestLoan/repay from a non-relayer, including the borrower themselves", async () => {
+      await makeEligibleBorrower();
+      await expect(
+        loan.connect(borrower).requestLoan(borrower.address, ethers.parseUnits("10", 6))
+      ).to.be.revertedWithCustomError(loan, "NotRelayer");
+      await expect(
+        loan.connect(borrower).repay(borrower.address, ethers.parseUnits("1", 6))
+      ).to.be.revertedWithCustomError(loan, "NotRelayer");
+    });
+
+    it("old relayer loses authorization immediately once the relayer is rotated", async () => {
+      await loan.connect(owner).setRelayer(other.address);
+      await expect(
+        loan.connect(relayer).registerBorrower(borrower.address, familySender.address)
+      ).to.be.revertedWithCustomError(loan, "NotRelayer");
+      await expect(loan.connect(other).registerBorrower(borrower.address, familySender.address)).to.not.be.reverted;
+    });
+  });
+
   describe("pool funding", () => {
     it("lets anyone fund the pool and emits PoolFunded", async () => {
       await token.connect(owner).mint(other.address, ethers.parseUnits("100", 6));
@@ -179,7 +250,7 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
     });
 
     it("blocks submitRemittanceProof while paused", async () => {
-      await loan.connect(borrower).registerBorrower(familySender.address);
+      await loan.connect(relayer).registerBorrower(borrower.address, familySender.address);
       await loan.connect(owner).pause();
 
       const encodedTx = ethers.toUtf8Bytes("paused-tx");
@@ -209,14 +280,12 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
       await loan.connect(owner).pause();
 
       await expect(loan.requestCreditReview(borrower.address)).to.be.revertedWithCustomError(loan, "EnforcedPause");
-      await expect(loan.connect(borrower).requestLoan(ethers.parseUnits("10", 6))).to.be.revertedWithCustomError(
-        loan,
-        "EnforcedPause"
-      );
-      await expect(loan.connect(borrower).repay(ethers.parseUnits("1", 6))).to.be.revertedWithCustomError(
-        loan,
-        "EnforcedPause"
-      );
+      await expect(
+        loan.connect(relayer).requestLoan(borrower.address, ethers.parseUnits("10", 6))
+      ).to.be.revertedWithCustomError(loan, "EnforcedPause");
+      await expect(
+        loan.connect(relayer).repay(borrower.address, ethers.parseUnits("1", 6))
+      ).to.be.revertedWithCustomError(loan, "EnforcedPause");
     });
 
     it("resumes normal operation after unpause", async () => {
@@ -224,12 +293,14 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
       await loan.connect(owner).pause();
       await loan.connect(owner).unpause();
 
-      await expect(loan.connect(borrower).requestLoan(ethers.parseUnits("10", 6))).to.not.be.reverted;
+      await expect(loan.connect(relayer).requestLoan(borrower.address, ethers.parseUnits("10", 6))).to.not.be
+        .reverted;
     });
 
     it("does not block registerBorrower, fundPool, or withdrawPool while paused", async () => {
       await loan.connect(owner).pause();
-      await expect(loan.connect(borrower).registerBorrower(familySender.address)).to.not.be.reverted;
+      await expect(loan.connect(relayer).registerBorrower(borrower.address, familySender.address)).to.not.be
+        .reverted;
 
       await token.connect(owner).mint(owner.address, ethers.parseUnits("10", 6));
       await token.connect(owner).approve(await loan.getAddress(), ethers.parseUnits("10", 6));
@@ -241,12 +312,35 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
   // ── Borrower / proof lifecycle ───────────────────────────────────────
 
   describe("registerBorrower", () => {
-    it("rejects a second registration from the same borrower", async () => {
-      await loan.connect(borrower).registerBorrower(familySender.address);
-      await expect(loan.connect(borrower).registerBorrower(other.address)).to.be.revertedWithCustomError(
-        loan,
-        "AlreadyRegistered"
-      );
+    it("rejects a second registration for the same borrower", async () => {
+      await loan.connect(relayer).registerBorrower(borrower.address, familySender.address);
+      await expect(
+        loan.connect(relayer).registerBorrower(borrower.address, other.address)
+      ).to.be.revertedWithCustomError(loan, "AlreadyRegistered");
+    });
+
+    it("rejects a zero borrower or zero declaredSender address", async () => {
+      await expect(
+        loan.connect(relayer).registerBorrower(ethers.ZeroAddress, familySender.address)
+      ).to.be.revertedWithCustomError(loan, "ZeroAddress");
+      await expect(
+        loan.connect(relayer).registerBorrower(borrower.address, ethers.ZeroAddress)
+      ).to.be.revertedWithCustomError(loan, "ZeroAddress");
+    });
+
+    it("records the first declared sender and emits both BorrowerRegistered and DeclaredSenderAdded", async () => {
+      const tx = await loan.connect(relayer).registerBorrower(borrower.address, familySender.address);
+      await expect(tx).to.emit(loan, "BorrowerRegistered").withArgs(borrower.address, familySender.address);
+      await expect(tx).to.emit(loan, "DeclaredSenderAdded").withArgs(borrower.address, familySender.address);
+      expect(await loan.getDeclaredSenders(borrower.address)).to.deep.equal([familySender.address]);
+    });
+
+    it("two different borrowers can each register independently without colliding", async () => {
+      await loan.connect(relayer).registerBorrower(borrower.address, familySender.address);
+      await expect(loan.connect(relayer).registerBorrower(other.address, secondSender.address)).to.not.be.reverted;
+
+      expect((await loan.getBorrower(borrower.address)).registered).to.equal(true);
+      expect((await loan.getBorrower(other.address)).registered).to.equal(true);
     });
 
     it("rejects proof submission for an address that never registered", async () => {
@@ -273,9 +367,104 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
     });
   });
 
+  describe("declared sender management", () => {
+    beforeEach(async () => {
+      await loan.connect(relayer).registerBorrower(borrower.address, familySender.address);
+    });
+
+    it("adds a second declared sender and lists both via getDeclaredSenders", async () => {
+      await expect(loan.connect(relayer).addDeclaredSender(borrower.address, secondSender.address))
+        .to.emit(loan, "DeclaredSenderAdded")
+        .withArgs(borrower.address, secondSender.address);
+
+      const senders = Array.from(await loan.getDeclaredSenders(borrower.address));
+      expect(senders).to.have.members([familySender.address, secondSender.address]);
+      expect(await loan.isDeclaredSender(borrower.address, secondSender.address)).to.equal(true);
+    });
+
+    it("rejects adding the same sender twice", async () => {
+      await expect(
+        loan.connect(relayer).addDeclaredSender(borrower.address, familySender.address)
+      ).to.be.revertedWithCustomError(loan, "SenderAlreadyDeclared");
+    });
+
+    it("rejects adding a zero-address sender", async () => {
+      await expect(
+        loan.connect(relayer).addDeclaredSender(borrower.address, ethers.ZeroAddress)
+      ).to.be.revertedWithCustomError(loan, "ZeroAddress");
+    });
+
+    it("rejects adding a sender for a borrower that isn't registered", async () => {
+      await expect(
+        loan.connect(relayer).addDeclaredSender(other.address, secondSender.address)
+      ).to.be.revertedWithCustomError(loan, "NotRegistered");
+    });
+
+    it("removes a declared sender and it stops being usable in proofs", async () => {
+      await loan.connect(relayer).addDeclaredSender(borrower.address, secondSender.address);
+      await expect(loan.connect(relayer).removeDeclaredSender(borrower.address, familySender.address))
+        .to.emit(loan, "DeclaredSenderRemoved")
+        .withArgs(borrower.address, familySender.address);
+
+      expect(await loan.getDeclaredSenders(borrower.address)).to.deep.equal([secondSender.address]);
+      expect(await loan.isDeclaredSender(borrower.address, familySender.address)).to.equal(false);
+
+      const encodedTx = ethers.toUtf8Bytes("removed-sender-tx");
+      const sourceTxHash = ethers.keccak256(encodedTx);
+      await prover.connect(owner).setVerified(encodedTx, true);
+      await expect(
+        loan
+          .connect(owner)
+          .submitRemittanceProof(
+            borrower.address,
+            1,
+            1,
+            encodedTx,
+            "0x",
+            "0x",
+            familySender.address,
+            ethers.parseUnits("50", 6),
+            1,
+            sourceTxHash
+          )
+      ).to.be.revertedWithCustomError(loan, "SenderNotDeclared");
+    });
+
+    it("rejects removing a sender that was never declared", async () => {
+      await expect(
+        loan.connect(relayer).removeDeclaredSender(borrower.address, other.address)
+      ).to.be.revertedWithCustomError(loan, "SenderNotFound");
+    });
+
+    it("proofs succeed from any currently declared sender, not just the first", async () => {
+      await loan.connect(relayer).addDeclaredSender(borrower.address, secondSender.address);
+
+      const encodedTx = ethers.toUtf8Bytes("second-sender-tx");
+      const sourceTxHash = ethers.keccak256(encodedTx);
+      await prover.connect(owner).setVerified(encodedTx, true);
+
+      await expect(
+        loan
+          .connect(owner)
+          .submitRemittanceProof(
+            borrower.address,
+            1,
+            1,
+            encodedTx,
+            "0x",
+            "0x",
+            secondSender.address,
+            ethers.parseUnits("50", 6),
+            1,
+            sourceTxHash
+          )
+      ).to.not.be.reverted;
+    });
+  });
+
   describe("submitRemittanceProof", () => {
     it("rejects a sourceTxHash that doesn't match keccak256(encodedTx)", async () => {
-      await loan.connect(borrower).registerBorrower(familySender.address);
+      await loan.connect(relayer).registerBorrower(borrower.address, familySender.address);
       const encodedTx = ethers.toUtf8Bytes("real-tx");
       const wrongHash = ethers.keccak256(ethers.toUtf8Bytes("some-other-bytes"));
       await prover.connect(owner).setVerified(encodedTx, true);
@@ -299,7 +488,7 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
     });
 
     it("emits RemittanceVerified and records the transfer in the registry on success", async () => {
-      await loan.connect(borrower).registerBorrower(familySender.address);
+      await loan.connect(relayer).registerBorrower(borrower.address, familySender.address);
       const encodedTx = ethers.toUtf8Bytes("good-tx");
       const sourceTxHash = ethers.keccak256(encodedTx);
       await prover.connect(owner).setVerified(encodedTx, true);
@@ -346,7 +535,7 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
     }
 
     it("records every transfer in the batch and emits one RemittanceVerified per entry", async () => {
-      await loan.connect(borrower).registerBorrower(familySender.address);
+      await loan.connect(relayer).registerBorrower(borrower.address, familySender.address);
       const now = Math.floor(Date.now() / 1000);
       const batch = await buildBatch([
         { amount: ethers.parseUnits("100", 6), timestamp: now - 20 * DAY, salt: "b1" },
@@ -373,14 +562,14 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
       expect(transfers.length).to.equal(2);
     });
 
-    it("reverts the entire batch (no partial writes) if any claimed sender doesn't match the declared sender", async () => {
-      await loan.connect(borrower).registerBorrower(familySender.address);
+    it("reverts the entire batch (no partial writes) if any claimed sender isn't declared", async () => {
+      await loan.connect(relayer).registerBorrower(borrower.address, familySender.address);
       const now = Math.floor(Date.now() / 1000);
       const batch = await buildBatch([
         { amount: ethers.parseUnits("100", 6), timestamp: now - 20 * DAY, salt: "bad1" },
         { amount: ethers.parseUnits("100", 6), timestamp: now - 10 * DAY, salt: "bad2" },
       ]);
-      batch.claimedSenders[1] = other.address; // corrupt the second entry
+      batch.claimedSenders[1] = other.address; // corrupt the second entry — not a declared sender
 
       await expect(
         loan
@@ -403,7 +592,7 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
     });
 
     it("reverts if any encodedTx in the batch fails verification", async () => {
-      await loan.connect(borrower).registerBorrower(familySender.address);
+      await loan.connect(relayer).registerBorrower(borrower.address, familySender.address);
       const now = Math.floor(Date.now() / 1000);
       const batch = await buildBatch([
         { amount: ethers.parseUnits("100", 6), timestamp: now - 20 * DAY, salt: "unv1", verified: true },
@@ -434,14 +623,15 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
   describe("requestLoan", () => {
     it("rejects a zero-amount request", async () => {
       await makeEligibleBorrower();
-      await expect(loan.connect(borrower).requestLoan(0)).to.be.revertedWithCustomError(loan, "ZeroAmount");
+      await expect(
+        loan.connect(relayer).requestLoan(borrower.address, 0)
+      ).to.be.revertedWithCustomError(loan, "ZeroAmount");
     });
 
-    it("rejects a request from an unregistered address", async () => {
-      await expect(loan.connect(other).requestLoan(ethers.parseUnits("10", 6))).to.be.revertedWithCustomError(
-        loan,
-        "NotRegistered"
-      );
+    it("rejects a request for an unregistered address", async () => {
+      await expect(
+        loan.connect(relayer).requestLoan(other.address, ethers.parseUnits("10", 6))
+      ).to.be.revertedWithCustomError(loan, "NotRegistered");
     });
 
     it("rejects a request exceeding available pool liquidity even when under the credit limit", async () => {
@@ -452,21 +642,31 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
       expect(poolBalance).to.be.lessThan(ethers.parseUnits("96", 6));
 
       await expect(
-        loan.connect(borrower).requestLoan(ethers.parseUnits("96", 6))
+        loan.connect(relayer).requestLoan(borrower.address, ethers.parseUnits("96", 6))
       ).to.be.revertedWithCustomError(loan, "InsufficientPoolLiquidity");
     });
 
     it("emits LoanDisbursed with the running outstanding balance", async () => {
       await makeEligibleBorrower();
-      await expect(loan.connect(borrower).requestLoan(ethers.parseUnits("40", 6)))
+      await expect(loan.connect(relayer).requestLoan(borrower.address, ethers.parseUnits("40", 6)))
         .to.emit(loan, "LoanDisbursed")
         .withArgs(borrower.address, ethers.parseUnits("40", 6), ethers.parseUnits("40", 6));
     });
 
+    it("disburses the loan tokens to the borrower, not to the relayer", async () => {
+      await makeEligibleBorrower();
+      const relayerBalanceBefore = await token.balanceOf(relayer.address);
+      await loan.connect(relayer).requestLoan(borrower.address, ethers.parseUnits("40", 6));
+
+      expect(await token.balanceOf(borrower.address)).to.equal(ethers.parseUnits("40", 6));
+      expect(await token.balanceOf(relayer.address)).to.equal(relayerBalanceBefore);
+    });
+
     it("allows drawing up to exactly the remaining available credit across multiple calls", async () => {
       await makeEligibleBorrower(); // creditLimit = 96 mUSD
-      await loan.connect(borrower).requestLoan(ethers.parseUnits("50", 6));
-      await expect(loan.connect(borrower).requestLoan(ethers.parseUnits("46", 6))).to.not.be.reverted;
+      await loan.connect(relayer).requestLoan(borrower.address, ethers.parseUnits("50", 6));
+      await expect(loan.connect(relayer).requestLoan(borrower.address, ethers.parseUnits("46", 6))).to.not.be
+        .reverted;
       const record = await loan.getBorrower(borrower.address);
       expect(record.outstandingPrincipal).to.equal(ethers.parseUnits("96", 6));
     });
@@ -475,44 +675,67 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
   describe("repay", () => {
     it("rejects a zero-amount repayment", async () => {
       await makeEligibleBorrower();
-      await loan.connect(borrower).requestLoan(ethers.parseUnits("10", 6));
-      await expect(loan.connect(borrower).repay(0)).to.be.revertedWithCustomError(loan, "ZeroAmount");
+      await loan.connect(relayer).requestLoan(borrower.address, ethers.parseUnits("10", 6));
+      await expect(
+        loan.connect(relayer).repay(borrower.address, 0)
+      ).to.be.revertedWithCustomError(loan, "ZeroAmount");
     });
 
     it("rejects repaying more than the outstanding principal", async () => {
       await makeEligibleBorrower();
-      await loan.connect(borrower).requestLoan(ethers.parseUnits("10", 6));
+      await loan.connect(relayer).requestLoan(borrower.address, ethers.parseUnits("10", 6));
       await token.connect(borrower).approve(await loan.getAddress(), ethers.parseUnits("20", 6));
 
       await expect(
-        loan.connect(borrower).repay(ethers.parseUnits("20", 6))
+        loan.connect(relayer).repay(borrower.address, ethers.parseUnits("20", 6))
       ).to.be.revertedWithCustomError(loan, "RepayExceedsOutstanding");
     });
 
-    it("rejects a repayment from a borrower who never registered", async () => {
-      await expect(loan.connect(other).repay(ethers.parseUnits("1", 6))).to.be.revertedWithCustomError(
-        loan,
-        "NotRegistered"
+    it("rejects a repayment for a borrower who never registered", async () => {
+      await expect(
+        loan.connect(relayer).repay(other.address, ethers.parseUnits("1", 6))
+      ).to.be.revertedWithCustomError(loan, "NotRegistered");
+    });
+
+    it("reverts if the borrower hasn't approved the loan contract for the repay amount", async () => {
+      await makeEligibleBorrower();
+      await loan.connect(relayer).requestLoan(borrower.address, ethers.parseUnits("40", 6));
+      // No approve() call from `borrower` here — repay must pull via
+      // safeTransferFrom(borrower, ...) and should revert on the ERC20 side.
+      await expect(loan.connect(relayer).repay(borrower.address, ethers.parseUnits("15", 6))).to.be.reverted;
+    });
+
+    it("pulls tokens from the borrower's own wallet, not the relayer's", async () => {
+      await makeEligibleBorrower();
+      await loan.connect(relayer).requestLoan(borrower.address, ethers.parseUnits("40", 6));
+      await token.connect(borrower).approve(await loan.getAddress(), ethers.parseUnits("15", 6));
+
+      const borrowerBalanceBefore = await token.balanceOf(borrower.address);
+      await loan.connect(relayer).repay(borrower.address, ethers.parseUnits("15", 6));
+
+      expect(await token.balanceOf(borrower.address)).to.equal(
+        borrowerBalanceBefore - ethers.parseUnits("15", 6)
       );
     });
 
     it("emits LoanRepaid with the updated outstanding balance", async () => {
       await makeEligibleBorrower();
-      await loan.connect(borrower).requestLoan(ethers.parseUnits("40", 6));
+      await loan.connect(relayer).requestLoan(borrower.address, ethers.parseUnits("40", 6));
       await token.connect(borrower).approve(await loan.getAddress(), ethers.parseUnits("15", 6));
 
-      await expect(loan.connect(borrower).repay(ethers.parseUnits("15", 6)))
+      await expect(loan.connect(relayer).repay(borrower.address, ethers.parseUnits("15", 6)))
         .to.emit(loan, "LoanRepaid")
         .withArgs(borrower.address, ethers.parseUnits("15", 6), ethers.parseUnits("25", 6));
     });
 
     it("allows partial repayment followed by drawing the freed-up credit again", async () => {
       await makeEligibleBorrower(); // creditLimit = 96 mUSD
-      await loan.connect(borrower).requestLoan(ethers.parseUnits("96", 6));
+      await loan.connect(relayer).requestLoan(borrower.address, ethers.parseUnits("96", 6));
       await token.connect(borrower).approve(await loan.getAddress(), ethers.parseUnits("30", 6));
-      await loan.connect(borrower).repay(ethers.parseUnits("30", 6));
+      await loan.connect(relayer).repay(borrower.address, ethers.parseUnits("30", 6));
 
-      await expect(loan.connect(borrower).requestLoan(ethers.parseUnits("30", 6))).to.not.be.reverted;
+      await expect(loan.connect(relayer).requestLoan(borrower.address, ethers.parseUnits("30", 6))).to.not.be
+        .reverted;
     });
   });
 
@@ -522,7 +745,7 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
     });
 
     it("availableCredit is zero for a registered borrower with too little history to be eligible", async () => {
-      await loan.connect(borrower).registerBorrower(familySender.address);
+      await loan.connect(relayer).registerBorrower(borrower.address, familySender.address);
       await submitFakeRemittance(ethers.parseUnits("50", 6), Math.floor(Date.now() / 1000), "thin-history");
       await loan.requestCreditReview(borrower.address);
       expect(await loan.availableCredit(borrower.address)).to.equal(0);
@@ -530,19 +753,24 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
 
     it("availableCredit reflects creditLimit minus outstandingPrincipal", async () => {
       await makeEligibleBorrower(); // creditLimit = 96 mUSD
-      await loan.connect(borrower).requestLoan(ethers.parseUnits("40", 6));
+      await loan.connect(relayer).requestLoan(borrower.address, ethers.parseUnits("40", 6));
       expect(await loan.availableCredit(borrower.address)).to.equal(ethers.parseUnits("56", 6));
     });
 
-    it("getBorrower returns the full stored record", async () => {
+    it("getBorrower returns the full stored record, and getDeclaredSenders returns the sender list separately", async () => {
       await makeEligibleBorrower();
       const record = await loan.getBorrower(borrower.address);
       expect(record.registered).to.equal(true);
-      expect(record.declaredSender).to.equal(familySender.address);
       expect(record.eligible).to.equal(true);
       expect(record.creditLimit).to.equal(ethers.parseUnits("96", 6));
       expect(record.outstandingPrincipal).to.equal(0);
       expect(record.lastReviewedAt).to.be.greaterThan(0);
+
+      expect(await loan.getDeclaredSenders(borrower.address)).to.deep.equal([familySender.address]);
+    });
+
+    it("getDeclaredSenders returns an empty array for an unregistered borrower", async () => {
+      expect(await loan.getDeclaredSenders(other.address)).to.deep.equal([]);
     });
   });
 
@@ -551,13 +779,13 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
       await expect(loan.requestCreditReview(other.address)).to.be.revertedWithCustomError(loan, "NotRegistered");
     });
 
-    it("is callable by anyone, not just the borrower or owner", async () => {
-      await loan.connect(borrower).registerBorrower(familySender.address);
+    it("is callable by anyone, not just the relayer or owner", async () => {
+      await loan.connect(relayer).registerBorrower(borrower.address, familySender.address);
       await expect(loan.connect(other).requestCreditReview(borrower.address)).to.not.be.reverted;
     });
 
     it("emits CreditReviewed with the decision's rationale", async () => {
-      await loan.connect(borrower).registerBorrower(familySender.address);
+      await loan.connect(relayer).registerBorrower(borrower.address, familySender.address);
       await expect(loan.requestCreditReview(borrower.address))
         .to.emit(loan, "CreditReviewed")
         .withArgs(borrower.address, false, 0, 0, "Not enough verified remittances yet to establish a pattern.");

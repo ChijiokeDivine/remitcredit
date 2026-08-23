@@ -22,7 +22,9 @@ export async function POST(req: Request) {
     const record = await client.getBorrower(borrower);
     if (!record.registered) throw new ApiError(404, "Borrower not registered");
 
-    const tx = await client.requestLoan(amount);
+    // requestLoan is relayer-gated on-chain and disburses to `borrower`
+    // directly — the relayer wallet only authorizes and pays gas.
+    const tx = await client.requestLoan(borrower, amount);
     const receipt = await tx.wait();
     const updated = await client.getBorrower(borrower);
 

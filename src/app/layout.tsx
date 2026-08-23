@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Fraunces, Inter, Google_Sans } from "next/font/google";
 import "./globals.css";
 import React from "react";
+import { Providers } from "@/components/providers";
+
+
 
 // Serif display face for the headline ("You're a doctor. Not a machine.")
 const fraunces = Fraunces({
@@ -41,11 +44,11 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${fraunces.variable} ${inter.variable} ${googleSans.variable} font-[family-name:var(--font-sans)] antialiased`}
+        className={`${fraunces.variable} ${inter.variable} font-[family-name:var(--font-sans)] antialiased`}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

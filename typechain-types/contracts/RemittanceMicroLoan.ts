@@ -26,7 +26,6 @@ import type {
 export declare namespace RemittanceMicroLoan {
   export type BorrowerStruct = {
     registered: boolean;
-    declaredSender: AddressLike;
     eligible: boolean;
     creditLimit: BigNumberish;
     riskScoreBps: BigNumberish;
@@ -36,7 +35,6 @@ export declare namespace RemittanceMicroLoan {
 
   export type BorrowerStructOutput = [
     registered: boolean,
-    declaredSender: string,
     eligible: boolean,
     creditLimit: bigint,
     riskScoreBps: bigint,
@@ -44,7 +42,6 @@ export declare namespace RemittanceMicroLoan {
     lastReviewedAt: bigint
   ] & {
     registered: boolean;
-    declaredSender: string;
     eligible: boolean;
     creditLimit: bigint;
     riskScoreBps: bigint;
@@ -56,11 +53,14 @@ export declare namespace RemittanceMicroLoan {
 export interface RemittanceMicroLoanInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "addDeclaredSender"
       | "availableCredit"
       | "borrowers"
       | "creditEngine"
       | "fundPool"
       | "getBorrower"
+      | "getDeclaredSenders"
+      | "isDeclaredSender"
       | "loanToken"
       | "owner"
       | "pause"
@@ -68,6 +68,8 @@ export interface RemittanceMicroLoanInterface extends Interface {
       | "precompile"
       | "registerBorrower"
       | "registry"
+      | "relayer"
+      | "removeDeclaredSender"
       | "renounceOwnership"
       | "repay"
       | "requestCreditReview"
@@ -76,6 +78,7 @@ export interface RemittanceMicroLoanInterface extends Interface {
       | "setLoanToken"
       | "setPrecompile"
       | "setRegistry"
+      | "setRelayer"
       | "submitRemittanceProof"
       | "submitRemittanceProofBatch"
       | "transferOwnership"
@@ -88,6 +91,8 @@ export interface RemittanceMicroLoanInterface extends Interface {
       | "BorrowerRegistered"
       | "CreditEngineUpdated"
       | "CreditReviewed"
+      | "DeclaredSenderAdded"
+      | "DeclaredSenderRemoved"
       | "LoanDisbursed"
       | "LoanRepaid"
       | "LoanTokenUpdated"
@@ -97,10 +102,15 @@ export interface RemittanceMicroLoanInterface extends Interface {
       | "PoolWithdrawn"
       | "PrecompileUpdated"
       | "RegistryUpdated"
+      | "RelayerUpdated"
       | "RemittanceVerified"
       | "Unpaused"
   ): EventFragment;
 
+  encodeFunctionData(
+    functionFragment: "addDeclaredSender",
+    values: [AddressLike, AddressLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "availableCredit",
     values: [AddressLike]
@@ -121,6 +131,14 @@ export interface RemittanceMicroLoanInterface extends Interface {
     functionFragment: "getBorrower",
     values: [AddressLike]
   ): string;
+  encodeFunctionData(
+    functionFragment: "getDeclaredSenders",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "isDeclaredSender",
+    values: [AddressLike, AddressLike]
+  ): string;
   encodeFunctionData(functionFragment: "loanToken", values?: undefined): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(functionFragment: "pause", values?: undefined): string;
@@ -131,21 +149,29 @@ export interface RemittanceMicroLoanInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "registerBorrower",
-    values: [AddressLike]
+    values: [AddressLike, AddressLike]
   ): string;
   encodeFunctionData(functionFragment: "registry", values?: undefined): string;
+  encodeFunctionData(functionFragment: "relayer", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "removeDeclaredSender",
+    values: [AddressLike, AddressLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "renounceOwnership",
     values?: undefined
   ): string;
-  encodeFunctionData(functionFragment: "repay", values: [BigNumberish]): string;
+  encodeFunctionData(
+    functionFragment: "repay",
+    values: [AddressLike, BigNumberish]
+  ): string;
   encodeFunctionData(
     functionFragment: "requestCreditReview",
     values: [AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "requestLoan",
-    values: [BigNumberish]
+    values: [AddressLike, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "setCreditEngine",
@@ -161,6 +187,10 @@ export interface RemittanceMicroLoanInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "setRegistry",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setRelayer",
     values: [AddressLike]
   ): string;
   encodeFunctionData(
@@ -204,6 +234,10 @@ export interface RemittanceMicroLoanInterface extends Interface {
   ): string;
 
   decodeFunctionResult(
+    functionFragment: "addDeclaredSender",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "availableCredit",
     data: BytesLike
   ): Result;
@@ -217,6 +251,14 @@ export interface RemittanceMicroLoanInterface extends Interface {
     functionFragment: "getBorrower",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "getDeclaredSenders",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "isDeclaredSender",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "loanToken", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "pause", data: BytesLike): Result;
@@ -227,6 +269,11 @@ export interface RemittanceMicroLoanInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "registry", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "relayer", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "removeDeclaredSender",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "renounceOwnership",
     data: BytesLike
@@ -256,6 +303,7 @@ export interface RemittanceMicroLoanInterface extends Interface {
     functionFragment: "setRegistry",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "setRelayer", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "submitRemittanceProof",
     data: BytesLike
@@ -321,6 +369,32 @@ export namespace CreditReviewedEvent {
     creditLimit: bigint;
     riskScoreBps: bigint;
     rationale: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace DeclaredSenderAddedEvent {
+  export type InputTuple = [borrower: AddressLike, sender: AddressLike];
+  export type OutputTuple = [borrower: string, sender: string];
+  export interface OutputObject {
+    borrower: string;
+    sender: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace DeclaredSenderRemovedEvent {
+  export type InputTuple = [borrower: AddressLike, sender: AddressLike];
+  export type OutputTuple = [borrower: string, sender: string];
+  export interface OutputObject {
+    borrower: string;
+    sender: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -459,6 +533,22 @@ export namespace RegistryUpdatedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace RelayerUpdatedEvent {
+  export type InputTuple = [
+    previousRelayer: AddressLike,
+    newRelayer: AddressLike
+  ];
+  export type OutputTuple = [previousRelayer: string, newRelayer: string];
+  export interface OutputObject {
+    previousRelayer: string;
+    newRelayer: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace RemittanceVerifiedEvent {
   export type InputTuple = [
     borrower: AddressLike,
@@ -542,6 +632,12 @@ export interface RemittanceMicroLoan extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  addDeclaredSender: TypedContractMethod<
+    [borrower: AddressLike, sender: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
   availableCredit: TypedContractMethod<
     [borrower: AddressLike],
     [bigint],
@@ -551,9 +647,8 @@ export interface RemittanceMicroLoan extends BaseContract {
   borrowers: TypedContractMethod<
     [arg0: AddressLike],
     [
-      [boolean, string, boolean, bigint, bigint, bigint, bigint] & {
+      [boolean, boolean, bigint, bigint, bigint, bigint] & {
         registered: boolean;
-        declaredSender: string;
         eligible: boolean;
         creditLimit: bigint;
         riskScoreBps: bigint;
@@ -574,6 +669,18 @@ export interface RemittanceMicroLoan extends BaseContract {
     "view"
   >;
 
+  getDeclaredSenders: TypedContractMethod<
+    [borrower: AddressLike],
+    [string[]],
+    "view"
+  >;
+
+  isDeclaredSender: TypedContractMethod<
+    [borrower: AddressLike, sender: AddressLike],
+    [boolean],
+    "view"
+  >;
+
   loanToken: TypedContractMethod<[], [string], "view">;
 
   owner: TypedContractMethod<[], [string], "view">;
@@ -585,16 +692,28 @@ export interface RemittanceMicroLoan extends BaseContract {
   precompile: TypedContractMethod<[], [string], "view">;
 
   registerBorrower: TypedContractMethod<
-    [declaredSender: AddressLike],
+    [borrower: AddressLike, declaredSender: AddressLike],
     [void],
     "nonpayable"
   >;
 
   registry: TypedContractMethod<[], [string], "view">;
 
+  relayer: TypedContractMethod<[], [string], "view">;
+
+  removeDeclaredSender: TypedContractMethod<
+    [borrower: AddressLike, sender: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
   renounceOwnership: TypedContractMethod<[], [void], "nonpayable">;
 
-  repay: TypedContractMethod<[amount: BigNumberish], [void], "nonpayable">;
+  repay: TypedContractMethod<
+    [borrower: AddressLike, amount: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
 
   requestCreditReview: TypedContractMethod<
     [borrower: AddressLike],
@@ -603,7 +722,7 @@ export interface RemittanceMicroLoan extends BaseContract {
   >;
 
   requestLoan: TypedContractMethod<
-    [amount: BigNumberish],
+    [borrower: AddressLike, amount: BigNumberish],
     [void],
     "nonpayable"
   >;
@@ -628,6 +747,12 @@ export interface RemittanceMicroLoan extends BaseContract {
 
   setRegistry: TypedContractMethod<
     [_registry: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  setRelayer: TypedContractMethod<
+    [newRelayer: AddressLike],
     [void],
     "nonpayable"
   >;
@@ -685,6 +810,13 @@ export interface RemittanceMicroLoan extends BaseContract {
   ): T;
 
   getFunction(
+    nameOrSignature: "addDeclaredSender"
+  ): TypedContractMethod<
+    [borrower: AddressLike, sender: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
     nameOrSignature: "availableCredit"
   ): TypedContractMethod<[borrower: AddressLike], [bigint], "view">;
   getFunction(
@@ -692,9 +824,8 @@ export interface RemittanceMicroLoan extends BaseContract {
   ): TypedContractMethod<
     [arg0: AddressLike],
     [
-      [boolean, string, boolean, bigint, bigint, bigint, bigint] & {
+      [boolean, boolean, bigint, bigint, bigint, bigint] & {
         registered: boolean;
-        declaredSender: string;
         eligible: boolean;
         creditLimit: bigint;
         riskScoreBps: bigint;
@@ -718,6 +849,16 @@ export interface RemittanceMicroLoan extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "getDeclaredSenders"
+  ): TypedContractMethod<[borrower: AddressLike], [string[]], "view">;
+  getFunction(
+    nameOrSignature: "isDeclaredSender"
+  ): TypedContractMethod<
+    [borrower: AddressLike, sender: AddressLike],
+    [boolean],
+    "view"
+  >;
+  getFunction(
     nameOrSignature: "loanToken"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
@@ -734,22 +875,44 @@ export interface RemittanceMicroLoan extends BaseContract {
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "registerBorrower"
-  ): TypedContractMethod<[declaredSender: AddressLike], [void], "nonpayable">;
+  ): TypedContractMethod<
+    [borrower: AddressLike, declaredSender: AddressLike],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "registry"
   ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "relayer"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "removeDeclaredSender"
+  ): TypedContractMethod<
+    [borrower: AddressLike, sender: AddressLike],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "renounceOwnership"
   ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "repay"
-  ): TypedContractMethod<[amount: BigNumberish], [void], "nonpayable">;
+  ): TypedContractMethod<
+    [borrower: AddressLike, amount: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "requestCreditReview"
   ): TypedContractMethod<[borrower: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "requestLoan"
-  ): TypedContractMethod<[amount: BigNumberish], [void], "nonpayable">;
+  ): TypedContractMethod<
+    [borrower: AddressLike, amount: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "setCreditEngine"
   ): TypedContractMethod<[_creditEngine: AddressLike], [void], "nonpayable">;
@@ -762,6 +925,9 @@ export interface RemittanceMicroLoan extends BaseContract {
   getFunction(
     nameOrSignature: "setRegistry"
   ): TypedContractMethod<[_registry: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "setRelayer"
+  ): TypedContractMethod<[newRelayer: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "submitRemittanceProof"
   ): TypedContractMethod<
@@ -834,6 +1000,20 @@ export interface RemittanceMicroLoan extends BaseContract {
     CreditReviewedEvent.OutputObject
   >;
   getEvent(
+    key: "DeclaredSenderAdded"
+  ): TypedContractEvent<
+    DeclaredSenderAddedEvent.InputTuple,
+    DeclaredSenderAddedEvent.OutputTuple,
+    DeclaredSenderAddedEvent.OutputObject
+  >;
+  getEvent(
+    key: "DeclaredSenderRemoved"
+  ): TypedContractEvent<
+    DeclaredSenderRemovedEvent.InputTuple,
+    DeclaredSenderRemovedEvent.OutputTuple,
+    DeclaredSenderRemovedEvent.OutputObject
+  >;
+  getEvent(
     key: "LoanDisbursed"
   ): TypedContractEvent<
     LoanDisbursedEvent.InputTuple,
@@ -897,6 +1077,13 @@ export interface RemittanceMicroLoan extends BaseContract {
     RegistryUpdatedEvent.OutputObject
   >;
   getEvent(
+    key: "RelayerUpdated"
+  ): TypedContractEvent<
+    RelayerUpdatedEvent.InputTuple,
+    RelayerUpdatedEvent.OutputTuple,
+    RelayerUpdatedEvent.OutputObject
+  >;
+  getEvent(
     key: "RemittanceVerified"
   ): TypedContractEvent<
     RemittanceVerifiedEvent.InputTuple,
@@ -943,6 +1130,28 @@ export interface RemittanceMicroLoan extends BaseContract {
       CreditReviewedEvent.InputTuple,
       CreditReviewedEvent.OutputTuple,
       CreditReviewedEvent.OutputObject
+    >;
+
+    "DeclaredSenderAdded(address,address)": TypedContractEvent<
+      DeclaredSenderAddedEvent.InputTuple,
+      DeclaredSenderAddedEvent.OutputTuple,
+      DeclaredSenderAddedEvent.OutputObject
+    >;
+    DeclaredSenderAdded: TypedContractEvent<
+      DeclaredSenderAddedEvent.InputTuple,
+      DeclaredSenderAddedEvent.OutputTuple,
+      DeclaredSenderAddedEvent.OutputObject
+    >;
+
+    "DeclaredSenderRemoved(address,address)": TypedContractEvent<
+      DeclaredSenderRemovedEvent.InputTuple,
+      DeclaredSenderRemovedEvent.OutputTuple,
+      DeclaredSenderRemovedEvent.OutputObject
+    >;
+    DeclaredSenderRemoved: TypedContractEvent<
+      DeclaredSenderRemovedEvent.InputTuple,
+      DeclaredSenderRemovedEvent.OutputTuple,
+      DeclaredSenderRemovedEvent.OutputObject
     >;
 
     "LoanDisbursed(address,uint256,uint256)": TypedContractEvent<
@@ -1042,6 +1251,17 @@ export interface RemittanceMicroLoan extends BaseContract {
       RegistryUpdatedEvent.InputTuple,
       RegistryUpdatedEvent.OutputTuple,
       RegistryUpdatedEvent.OutputObject
+    >;
+
+    "RelayerUpdated(address,address)": TypedContractEvent<
+      RelayerUpdatedEvent.InputTuple,
+      RelayerUpdatedEvent.OutputTuple,
+      RelayerUpdatedEvent.OutputObject
+    >;
+    RelayerUpdated: TypedContractEvent<
+      RelayerUpdatedEvent.InputTuple,
+      RelayerUpdatedEvent.OutputTuple,
+      RelayerUpdatedEvent.OutputObject
     >;
 
     "RemittanceVerified(address,address,uint256,uint64,bytes32)": TypedContractEvent<
