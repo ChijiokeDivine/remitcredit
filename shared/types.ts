@@ -1,27 +1,31 @@
 // shared/types.ts
 
+export type UscMerkleProof = unknown;
+export type UscContinuityProof = unknown;
+
 export interface RemittanceProofData {
   chainKey: number;
   blockHeight: number;
-  txBytes: string; // hex-encoded raw transaction
-  merkleProof: string; // hex-encoded, opaque to callers
-  continuityProof: string; // hex-encoded, opaque to callers
+  txBytes: string | Uint8Array;
+  merkleProof: UscMerkleProof;
+  continuityProof: UscContinuityProof;
   sourceTxHash: string;
 }
 
 export interface DecodedRemittance {
   sender: string;
-  recipient: string; // the borrower's declared wallet
-  amount: string; // decimal string in the token's smallest unit
-  sourceTimestamp: number; // unix seconds
+  recipient: string;
+  amount: string;
+  sourceTimestamp: number;
 }
 
+/** Matches getBorrower + getDeclaredSenders on RemittanceMicroLoan. */
 export interface BorrowerRecord {
   address: string;
   declaredSenders: string[];
   registered: boolean;
   eligible: boolean;
-  creditLimit: string; // decimal string, smallest unit
+  creditLimit: string;
   riskScoreBps: number;
   outstandingPrincipal: string;
   lastReviewedAt: number;

@@ -1,8 +1,9 @@
+// src/app/api/loans/request/route.ts
 import { z } from "zod";
 import { isAddress } from "ethers";
-import { requireRelayerClient } from "../../../../server/contracts";
-import { activityStore } from "../../../../server/store";
-import { json, toErrorResponse, ApiError } from "../../../../server/api-error";
+import { requireRelayerClient } from "@/server/contracts";
+import { activityStore } from "@/server/store";
+import { json, toErrorResponse, ApiError } from "@/server/api-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,8 +23,6 @@ export async function POST(req: Request) {
     const record = await client.getBorrower(borrower);
     if (!record.registered) throw new ApiError(404, "Borrower not registered");
 
-    // requestLoan is relayer-gated on-chain and disburses to `borrower`
-    // directly — the relayer wallet only authorizes and pays gas.
     const tx = await client.requestLoan(borrower, amount);
     const receipt = await tx.wait();
     const updated = await client.getBorrower(borrower);
@@ -49,7 +48,9 @@ export async function POST(req: Request) {
     );
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return toErrorResponse(new ApiError(400, err.errors[0]?.message ?? "Invalid body"));
+      return toErrorResponse(
+        new ApiError(400, err.errors[0]?.message ?? "Invalid body")
+      );
     }
     return toErrorResponse(err);
   }

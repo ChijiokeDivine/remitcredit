@@ -1,6 +1,7 @@
+// src/app/api/borrowers/route.ts
 import { z } from "zod";
 import { isAddress } from "ethers";
-import { requireRelayerClient } from "@/server/contracts";
+import { getReadClient, requireRelayerClient } from "@/server/contracts";
 import { activityStore } from "@/server/store";
 import { json, toErrorResponse, ApiError } from "@/server/api-error";
 
@@ -20,19 +21,29 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { borrower, declaredSenders } = registerSchema.parse(body);
 
+    // Read-only pre-check so this endpoint is safe to retry/double-submit.
+    const existing = await getReadClient().getBorrower(borrower);
+    const alreadyDeclared = new Set(
+      existing.declaredSenders.map((a) => a.toLowerCase())
+    );
+
     const client = requireRelayerClient();
+    const txHashes: string[] = [];
+    let sendersToAdd = declaredSenders;
 
-    const [firstSender, ...extraSenders] = declaredSenders;
+    if (existing.registered) {
+      // Borrower exists — nothing to register, just add any new senders below.
+    } else {
+      const [firstSender, ...rest] = declaredSenders;
+      const registerTx = await client.registerBorrower(borrower, firstSender);
+      const registerReceipt = await registerTx.wait();
+      txHashes.push(registerReceipt?.hash ?? registerTx.hash);
+      alreadyDeclared.add(firstSender.toLowerCase());
+      sendersToAdd = rest;
+    }
 
-    // registerBorrower/addDeclaredSender are relayer-gated on-chain and take
-    // `borrower` explicitly — the relayer wallet only authorizes and pays
-    // gas, it is never the on-chain borrower identity.
-    const registerTx = await client.registerBorrower(borrower, firstSender);
-    const registerReceipt = await registerTx.wait();
-
-    const txHashes: string[] = [registerReceipt?.hash ?? registerTx.hash];
-
-    for (const sender of extraSenders) {
+    for (const sender of sendersToAdd) {
+      if (alreadyDeclared.has(sender.toLowerCase())) continue; // avoid SenderAlreadyDeclared
       const addTx = await client.addDeclaredSender(borrower, sender);
       const addReceipt = await addTx.wait();
       txHashes.push(addReceipt?.hash ?? addTx.hash);
@@ -40,17 +51,19 @@ export async function POST(req: Request) {
 
     activityStore.append({
       borrower,
-      type: "borrower_registered",
-      data: { declaredSenders, txHash: txHashes[0], txHashes },
+      type:  "borrower_registered",
+      data: { declaredSenders, txHash: txHashes[0] ?? null, txHashes,  alreadyRegistered: existing.registered },
     });
 
     return json(
-      { borrower, declaredSenders, txHash: txHashes[0], txHashes },
+      { borrower, declaredSenders, txHash: txHashes[0] ?? null, txHashes },
       201
     );
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return toErrorResponse(new ApiError(400, err.errors[0]?.message ?? "Invalid body"));
+      return toErrorResponse(
+        new ApiError(400, err.errors[0]?.message ?? "Invalid body")
+      );
     }
     return toErrorResponse(err);
   }

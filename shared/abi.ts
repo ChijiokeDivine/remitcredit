@@ -67,4 +67,5 @@ export const ERC20_ABI = [
   "function approve(address spender, uint256 amount) external returns (bool)",
   "function transfer(address to, uint256 amount) external returns (bool)",
   "function mint(address to, uint256 amount) external",
+  "function allowance(address owner, address spender) external view returns (uint256)",
 ] as const;

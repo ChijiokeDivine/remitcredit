@@ -1,8 +1,9 @@
+// src/app/api/borrowers/senders/route.ts
 import { z } from "zod";
 import { isAddress } from "ethers";
-import { requireRelayerClient } from "../../../../server/contracts";
-import { activityStore } from "../../../../server/store";
-import { json, toErrorResponse, ApiError } from "../../../../server/api-error";
+import { requireRelayerClient } from "@/server/contracts";
+import { activityStore } from "@/server/store";
+import { json, toErrorResponse, ApiError } from "@/server/api-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,7 +30,9 @@ export async function POST(req: Request) {
     return json({ borrower, sender, txHash: receipt?.hash ?? tx.hash }, 201);
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return toErrorResponse(new ApiError(400, err.errors[0]?.message ?? "Invalid body"));
+      return toErrorResponse(
+        new ApiError(400, err.errors[0]?.message ?? "Invalid body")
+      );
     }
     return toErrorResponse(err);
   }
@@ -45,13 +48,19 @@ export async function DELETE(req: Request) {
     activityStore.append({
       borrower,
       type: "borrower_registered",
-      data: { action: "sender_removed", sender, txHash: receipt?.hash ?? tx.hash },
+      data: {
+        action: "sender_removed",
+        sender,
+        txHash: receipt?.hash ?? tx.hash,
+      },
     });
 
     return json({ borrower, sender, txHash: receipt?.hash ?? tx.hash });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return toErrorResponse(new ApiError(400, err.errors[0]?.message ?? "Invalid body"));
+      return toErrorResponse(
+        new ApiError(400, err.errors[0]?.message ?? "Invalid body")
+      );
     }
     return toErrorResponse(err);
   }

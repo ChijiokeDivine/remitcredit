@@ -1,8 +1,9 @@
+// src/app/api/loans/repay/route.ts
 import { z } from "zod";
 import { isAddress } from "ethers";
-import { requireRelayerClient } from "../../../../server/contracts";
-import { activityStore } from "../../../../server/store";
-import { json, toErrorResponse, ApiError } from "../../../../server/api-error";
+import { requireRelayerClient } from "@/server/contracts";
+import { activityStore } from "@/server/store";
+import { json, toErrorResponse, ApiError } from "@/server/api-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,10 +21,6 @@ export async function POST(req: Request) {
     const { borrower, amount } = amountSchema.parse(await req.json());
     const client = requireRelayerClient();
 
-    // repay() pulls tokens from `borrower` via safeTransferFrom, so the
-    // borrower must have approved the loan contract from their own wallet
-    // first. Check the allowance up front so a missing approval surfaces
-    // as a clear 400 instead of an on-chain revert.
     const allowance: bigint = await client.loanToken.allowance(
       borrower,
       await client.loan.getAddress()
@@ -36,8 +33,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // requestLoan/repay are relayer-gated on-chain and take `borrower`
-    // explicitly — the relayer wallet only authorizes and pays gas.
     const tx = await client.repay(borrower, amount);
     const receipt = await tx.wait();
     const updated = await client.getBorrower(borrower);
@@ -60,7 +55,9 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return toErrorResponse(new ApiError(400, err.errors[0]?.message ?? "Invalid body"));
+      return toErrorResponse(
+        new ApiError(400, err.errors[0]?.message ?? "Invalid body")
+      );
     }
     return toErrorResponse(err);
   }

@@ -1,3 +1,5 @@
+import { ContractCallError } from "../../shared/services/contractClient";
+
 export class ApiError extends Error {
   constructor(
     public statusCode: number,
@@ -9,36 +11,41 @@ export class ApiError extends Error {
   }
 }
 
-const KNOWN_CONTRACT_ERRORS = [
-  "NotRegistered",
-  "AlreadyRegistered",
-  "ProofNotVerified",
-  "TxHashMismatch",
-  "SenderNotDeclared",
-  "NotEligible",
-  "CreditLimitExceeded",
-  "ZeroAmount",
-  "RepayExceedsOutstanding",
-  "InsufficientPoolLiquidity",
-  "DuplicateTransfer",
-];
+/** Status code per known custom error name. Anything not listed falls back to 400. */
+const CONTRACT_ERROR_STATUS: Record<string, number> = {
+  NotRegistered: 404,
+  SenderNotFound: 404,
+  AlreadyRegistered: 409,
+  SenderAlreadyDeclared: 409,
+  DuplicateTransfer: 409,
+  NotRelayer: 403,
+  NotRecorder: 403,
+  NotEligible: 403,
+  ProofNotVerified: 422,
+  TxHashMismatch: 400,
+  SenderNotDeclared: 400,
+  ZeroAmount: 400,
+  ZeroAddress: 400,
+  OutOfOrderTimestamp: 400,
+  CreditLimitExceeded: 400,
+  RepayExceedsOutstanding: 400,
+  InsufficientPoolLiquidity: 503,
+};
 
-/** Map any thrown value to a Next Response. */
 export function toErrorResponse(err: unknown): Response {
   if (err instanceof ApiError) {
     return json({ error: err.message, details: err.details }, err.statusCode);
   }
 
+  if (err instanceof ContractCallError) {
+    const status = CONTRACT_ERROR_STATUS[err.errorName] ?? 400;
+    return json(
+      { error: err.errorName, message: err.message, args: err.args },
+      status
+    );
+  }
+
   const message = err instanceof Error ? err.message : "Unknown error";
-
-  if (message.includes("AlreadyRecorded") || message.includes("already recorded")) {
-    return json({ error: message }, 409);
-  }
-
-  const matched = KNOWN_CONTRACT_ERRORS.find((name) => message.includes(name));
-  if (matched) {
-    return json({ error: matched, message }, 400);
-  }
 
   // Missing env / config — surface as 503 so the UI can show a soft empty state
   if (message.includes("Missing required environment variable")) {
@@ -60,9 +67,6 @@ export function toErrorResponse(err: unknown): Response {
 export function json(data: unknown, status = 200): Response {
   return new Response(
     JSON.stringify(data, (_k, v) => (typeof v === "bigint" ? v.toString() : v)),
-    {
-      status,
-      headers: { "Content-Type": "application/json" },
-    }
+    { status, headers: { "Content-Type": "application/json" } }
   );
 }
