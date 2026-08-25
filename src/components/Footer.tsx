@@ -63,7 +63,7 @@ export default function Footer() {
             className="
               text-center
               font-[family-name:var(--font-serif)]
-              text-[clamp(5.5rem,18vw,16rem)]
+              text-[clamp(2.2rem,18vw,16rem)]
               font-normal
               leading-none
               tracking-[-0.04em]

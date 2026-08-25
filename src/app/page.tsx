@@ -147,7 +147,7 @@ export default function Home() {
 
         {/* Email capture / login, pinned near the bottom of the hero */}
         <div
-          className="absolute inset-x-0 z-30 flex justify-center px-4 bottom-72 md:bottom-[max(1.5rem,env(safe-area-inset-bottom))]"
+          className="absolute inset-x-0 z-30 flex justify-center px-4 bottom-40 md:bottom-[max(1.5rem,env(safe-area-inset-bottom))]"
         >
           <div className="mt-4 flex flex-col items-center gap-3">
             <RotatingExample />
@@ -156,7 +156,7 @@ export default function Home() {
               href="/onboarding"
               className="rounded-md bg-white/20 px-4 py-2 text-sm font-medium text-black ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-5 md:py-2.5 md:text-[15px] md:hidden block"
             >
-              Login
+              Check eligibility
             </Link>
           </div>
         </div>

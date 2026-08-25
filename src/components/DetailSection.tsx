@@ -6,7 +6,7 @@ export default function DetailSection() {
       {/* RECIPIENTS */}
       <div className="sticky top-0 z-10 mx-auto grid min-h-[calc(100vh-40px)] w-full grid-cols-1 overflow-hidden rounded-[20px] lg:grid-cols-[1.03fr_1fr]">
         {/* Image */}
-        <div className="relative min-h-[520px] overflow-hidden rounded-[20px] lg:min-h-[calc(100vh-80px)]">
+        <div className="relative min-h-[280px] md:min-h-[520px] overflow-hidden rounded-[20px] lg:min-h-[calc(100vh-80px)]">
           <Image
             src="/image_3.webp"
             alt="Friends enjoying a meal together outdoors"
@@ -37,7 +37,7 @@ export default function DetailSection() {
       {/* SENDERS */}
       <div className="sticky top-0 z-20 mx-auto grid min-h-[calc(100vh-40px)] w-full grid-cols-1 overflow-hidden rounded-[20px] lg:grid-cols-[1.03fr_1fr]">
         {/* Image */}
-        <div className="relative min-h-[520px] overflow-hidden rounded-[20px] lg:min-h-[calc(100vh-80px)]">
+        <div className="relative min-h-[280px] md:min-h-[520px] overflow-hidden rounded-[20px] lg:min-h-[calc(100vh-80px)]">
           <Image
             src="/image_1.webp"
             alt="Friends enjoying a meal together outdoors"
@@ -68,7 +68,7 @@ export default function DetailSection() {
       {/* HOW IT WORKS */}
       <div className="sticky top-0 z-30 mx-auto grid min-h-[calc(100vh-40px)] w-full grid-cols-1 overflow-hidden rounded-[20px] lg:grid-cols-[1.03fr_1fr]">
         {/* Image */}
-        <div className="relative min-h-[520px] overflow-hidden rounded-[20px] lg:min-h-[calc(100vh-80px)]">
+        <div className="relative min-h-[280px] md:min-h-[520px] overflow-hidden rounded-[20px] lg:min-h-[calc(100vh-80px)]">
           <Image
             src="/image_2.webp"
             alt="Friends enjoying a meal together outdoors"
