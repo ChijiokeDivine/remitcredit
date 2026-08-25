@@ -25,11 +25,25 @@ export interface IAttestcoinBlockProverInterface extends Interface {
 
   encodeFunctionData(
     functionFragment: "verify",
-    values: [BigNumberish, BigNumberish, BytesLike, BytesLike, BytesLike]
+    values: [
+      BigNumberish,
+      BigNumberish,
+      BytesLike,
+      BytesLike,
+      BytesLike,
+      boolean
+    ]
   ): string;
   encodeFunctionData(
     functionFragment: "verifyBatch",
-    values: [BigNumberish, BigNumberish[], BytesLike[], BytesLike[], BytesLike]
+    values: [
+      BigNumberish,
+      BigNumberish[],
+      BytesLike[],
+      BytesLike[],
+      BytesLike,
+      boolean
+    ]
   ): string;
 
   decodeFunctionResult(functionFragment: "verify", data: BytesLike): Result;
@@ -88,10 +102,11 @@ export interface IAttestcoinBlockProver extends BaseContract {
       blockHeight: BigNumberish,
       encodedTx: BytesLike,
       merkleProof: BytesLike,
-      continuityProof: BytesLike
+      continuityProof: BytesLike,
+      emitEvent: boolean
     ],
     [boolean],
-    "view"
+    "nonpayable"
   >;
 
   verifyBatch: TypedContractMethod<
@@ -100,10 +115,11 @@ export interface IAttestcoinBlockProver extends BaseContract {
       blockHeights: BigNumberish[],
       encodedTxs: BytesLike[],
       merkleProofs: BytesLike[],
-      continuityProof: BytesLike
+      continuityProof: BytesLike,
+      emitEvent: boolean
     ],
     [boolean],
-    "view"
+    "nonpayable"
   >;
 
   getFunction<T extends ContractMethod = ContractMethod>(
@@ -118,10 +134,11 @@ export interface IAttestcoinBlockProver extends BaseContract {
       blockHeight: BigNumberish,
       encodedTx: BytesLike,
       merkleProof: BytesLike,
-      continuityProof: BytesLike
+      continuityProof: BytesLike,
+      emitEvent: boolean
     ],
     [boolean],
-    "view"
+    "nonpayable"
   >;
   getFunction(
     nameOrSignature: "verifyBatch"
@@ -131,10 +148,11 @@ export interface IAttestcoinBlockProver extends BaseContract {
       blockHeights: BigNumberish[],
       encodedTxs: BytesLike[],
       merkleProofs: BytesLike[],
-      continuityProof: BytesLike
+      continuityProof: BytesLike,
+      emitEvent: boolean
     ],
     [boolean],
-    "view"
+    "nonpayable"
   >;
 
   filters: {};

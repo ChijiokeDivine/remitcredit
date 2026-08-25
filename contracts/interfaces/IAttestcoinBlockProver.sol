@@ -36,8 +36,9 @@ interface IAttestcoinBlockProver {
         uint64 blockHeight,
         bytes calldata encodedTx,
         bytes calldata merkleProof,
-        bytes calldata continuityProof
-    ) external view returns (bool verified);
+        bytes calldata continuityProof,
+        bool emitEvent
+    ) external returns (bool verified);
 
     /// @notice Batch variant — up to 10 transactions sharing one continuity proof.
     function verifyBatch(
@@ -45,6 +46,7 @@ interface IAttestcoinBlockProver {
         uint64[] calldata blockHeights,
         bytes[] calldata encodedTxs,
         bytes[] calldata merkleProofs,
-        bytes calldata continuityProof
-    ) external view returns (bool verified);
+        bytes calldata continuityProof,
+        bool emitEvent
+    ) external returns (bool verified);
 }

@@ -13,6 +13,8 @@ import {IAttestcoinBlockProver} from "../interfaces/IAttestcoinBlockProver.sol";
 contract MockAttestcoinBlockProver is Ownable, IAttestcoinBlockProver {
     mapping(bytes32 => bool) public verifiedTxHashes;
 
+    event Verified(bytes32 indexed encodedTxHash);
+
     constructor(address initialOwner) Ownable(initialOwner) {}
 
     function setVerified(bytes calldata encodedTx, bool isVerified) external onlyOwner {
@@ -24,9 +26,12 @@ contract MockAttestcoinBlockProver is Ownable, IAttestcoinBlockProver {
         uint64, /* blockHeight */
         bytes calldata encodedTx,
         bytes calldata, /* merkleProof */
-        bytes calldata /* continuityProof */
-    ) external view returns (bool) {
-        return verifiedTxHashes[keccak256(encodedTx)];
+        bytes calldata, /* continuityProof */
+        bool emitEvent
+    ) external returns (bool) {
+        bool ok = verifiedTxHashes[keccak256(encodedTx)];
+        if (ok && emitEvent) emit Verified(keccak256(encodedTx));
+        return ok;
     }
 
     function verifyBatch(
@@ -34,10 +39,16 @@ contract MockAttestcoinBlockProver is Ownable, IAttestcoinBlockProver {
         uint64[] calldata, /* blockHeights */
         bytes[] calldata encodedTxs,
         bytes[] calldata, /* merkleProofs */
-        bytes calldata /* continuityProof */
-    ) external view returns (bool) {
+        bytes calldata, /* continuityProof */
+        bool emitEvent
+    ) external returns (bool) {
         for (uint256 i; i < encodedTxs.length; ++i) {
             if (!verifiedTxHashes[keccak256(encodedTxs[i])]) return false;
+        }
+        if (emitEvent) {
+            for (uint256 i; i < encodedTxs.length; ++i) {
+                emit Verified(keccak256(encodedTxs[i]));
+            }
         }
         return true;
     }

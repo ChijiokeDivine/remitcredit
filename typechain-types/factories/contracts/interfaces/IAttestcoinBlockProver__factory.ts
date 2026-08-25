@@ -36,6 +36,11 @@ const _abi = [
         name: "continuityProof",
         type: "bytes",
       },
+      {
+        internalType: "bool",
+        name: "emitEvent",
+        type: "bool",
+      },
     ],
     name: "verify",
     outputs: [
@@ -45,7 +50,7 @@ const _abi = [
         type: "bool",
       },
     ],
-    stateMutability: "view",
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -75,6 +80,11 @@ const _abi = [
         name: "continuityProof",
         type: "bytes",
       },
+      {
+        internalType: "bool",
+        name: "emitEvent",
+        type: "bool",
+      },
     ],
     name: "verifyBatch",
     outputs: [
@@ -84,7 +94,7 @@ const _abi = [
         type: "bool",
       },
     ],
-    stateMutability: "view",
+    stateMutability: "nonpayable",
     type: "function",
   },
 ] as const;

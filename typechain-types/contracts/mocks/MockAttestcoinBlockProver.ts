@@ -35,7 +35,9 @@ export interface MockAttestcoinBlockProverInterface extends Interface {
       | "verifyBatch"
   ): FunctionFragment;
 
-  getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
+  getEvent(
+    nameOrSignatureOrTopic: "OwnershipTransferred" | "Verified"
+  ): EventFragment;
 
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
@@ -56,11 +58,25 @@ export interface MockAttestcoinBlockProverInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "verify",
-    values: [BigNumberish, BigNumberish, BytesLike, BytesLike, BytesLike]
+    values: [
+      BigNumberish,
+      BigNumberish,
+      BytesLike,
+      BytesLike,
+      BytesLike,
+      boolean
+    ]
   ): string;
   encodeFunctionData(
     functionFragment: "verifyBatch",
-    values: [BigNumberish, BigNumberish[], BytesLike[], BytesLike[], BytesLike]
+    values: [
+      BigNumberish,
+      BigNumberish[],
+      BytesLike[],
+      BytesLike[],
+      BytesLike,
+      boolean
+    ]
   ): string;
 
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
@@ -93,6 +109,18 @@ export namespace OwnershipTransferredEvent {
   export interface OutputObject {
     previousOwner: string;
     newOwner: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace VerifiedEvent {
+  export type InputTuple = [encodedTxHash: BytesLike];
+  export type OutputTuple = [encodedTxHash: string];
+  export interface OutputObject {
+    encodedTxHash: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -167,10 +195,11 @@ export interface MockAttestcoinBlockProver extends BaseContract {
       arg1: BigNumberish,
       encodedTx: BytesLike,
       arg3: BytesLike,
-      arg4: BytesLike
+      arg4: BytesLike,
+      emitEvent: boolean
     ],
     [boolean],
-    "view"
+    "nonpayable"
   >;
 
   verifyBatch: TypedContractMethod<
@@ -179,10 +208,11 @@ export interface MockAttestcoinBlockProver extends BaseContract {
       arg1: BigNumberish[],
       encodedTxs: BytesLike[],
       arg3: BytesLike[],
-      arg4: BytesLike
+      arg4: BytesLike,
+      emitEvent: boolean
     ],
     [boolean],
-    "view"
+    "nonpayable"
   >;
 
   getFunction<T extends ContractMethod = ContractMethod>(
@@ -216,10 +246,11 @@ export interface MockAttestcoinBlockProver extends BaseContract {
       arg1: BigNumberish,
       encodedTx: BytesLike,
       arg3: BytesLike,
-      arg4: BytesLike
+      arg4: BytesLike,
+      emitEvent: boolean
     ],
     [boolean],
-    "view"
+    "nonpayable"
   >;
   getFunction(
     nameOrSignature: "verifyBatch"
@@ -229,10 +260,11 @@ export interface MockAttestcoinBlockProver extends BaseContract {
       arg1: BigNumberish[],
       encodedTxs: BytesLike[],
       arg3: BytesLike[],
-      arg4: BytesLike
+      arg4: BytesLike,
+      emitEvent: boolean
     ],
     [boolean],
-    "view"
+    "nonpayable"
   >;
 
   getEvent(
@@ -241,6 +273,13 @@ export interface MockAttestcoinBlockProver extends BaseContract {
     OwnershipTransferredEvent.InputTuple,
     OwnershipTransferredEvent.OutputTuple,
     OwnershipTransferredEvent.OutputObject
+  >;
+  getEvent(
+    key: "Verified"
+  ): TypedContractEvent<
+    VerifiedEvent.InputTuple,
+    VerifiedEvent.OutputTuple,
+    VerifiedEvent.OutputObject
   >;
 
   filters: {
@@ -253,6 +292,17 @@ export interface MockAttestcoinBlockProver extends BaseContract {
       OwnershipTransferredEvent.InputTuple,
       OwnershipTransferredEvent.OutputTuple,
       OwnershipTransferredEvent.OutputObject
+    >;
+
+    "Verified(bytes32)": TypedContractEvent<
+      VerifiedEvent.InputTuple,
+      VerifiedEvent.OutputTuple,
+      VerifiedEvent.OutputObject
+    >;
+    Verified: TypedContractEvent<
+      VerifiedEvent.InputTuple,
+      VerifiedEvent.OutputTuple,
+      VerifiedEvent.OutputObject
     >;
   };
 }

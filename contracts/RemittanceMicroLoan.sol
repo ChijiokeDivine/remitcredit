@@ -271,7 +271,7 @@ contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
         if (!_isDeclaredSender(borrower, claimedSender)) revert SenderNotDeclared(claimedSender);
         if (sourceTxHash != keccak256(encodedTx)) revert TxHashMismatch();
 
-        bool verified = precompile.verify(chainKey, blockHeight, encodedTx, merkleProof, continuityProof);
+        bool verified = precompile.verify(chainKey, blockHeight, encodedTx, merkleProof, continuityProof, true);
         if (!verified) revert ProofNotVerified();
 
         registry.recordVerifiedTransfer(borrower, claimedSender, claimedAmount, claimedTimestamp, sourceTxHash);
@@ -304,7 +304,7 @@ contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
             if (sourceTxHashes[i] != keccak256(encodedTxs[i])) revert TxHashMismatch();
         }
 
-        bool verified = precompile.verifyBatch(chainKey, blockHeights, encodedTxs, merkleProofs, continuityProof);
+        bool verified = precompile.verifyBatch(chainKey, blockHeights, encodedTxs, merkleProofs, continuityProof, true);
         if (!verified) revert ProofNotVerified();
 
         for (uint256 i; i < n; ++i) {
