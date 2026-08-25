@@ -6,18 +6,24 @@ import { RemitCreditClient } from "../../shared/services/contractClient";
 import { decodeErc20Remittance } from "../../shared/services/txDecoder";
 
 export interface SubmitProofResult {
-  sourceTxHash: string;
+  sourceTxHash: string; // the real source-chain tx hash (for display/lookup)
+  onchainSourceTxHash: string; // keccak256(txBytes) — what's actually recorded on-chain
   borrower: string;
-  onchainTxHash: string;
+  onchainTxHash: string; // the Creditcoin (relayer) tx hash for this submission
   amount: string;
 }
 
 /// Runs the full Deploy → Prove → Verify pipeline for one remittance
 /// transaction: decode it, wait for + fetch its Attestcoin proof, and
-/// submit it to RemittanceMicroLoan for on-chain verification. Idempotent
-/// in effect — if the transfer is already recorded, the contract call
-/// reverts with DuplicateTransfer via the registry, which the caller can
-/// treat as a no-op rather than an error.
+/// submit it to RemittanceMicroLoan for on-chain verification.
+///
+/// Note: the registry's `isTransferRecorded` / `DuplicateTransfer` dedupe key
+/// is keccak256(txBytes) (see ProofService), not the source chain's real tx
+/// hash — those are different values (see proofService.ts for why). That
+/// value only exists once the proof has been built, so the dedupe check runs
+/// *after* `buildProofForTransaction`, not before. Idempotent in effect — if
+/// the transfer is already recorded, this throws AlreadyRecordedError, which
+/// the caller can treat as a no-op rather than an error.
 export async function submitRemittanceProofForTx(
   config: RemitCreditConfig,
   client: RemitCreditClient,
@@ -26,11 +32,6 @@ export async function submitRemittanceProofForTx(
 ): Promise<SubmitProofResult> {
   const sourceProvider = new JsonRpcProvider(config.sourceChain.rpcUrl);
   const proofService = new ProofService(config);
-
-  const alreadyRecorded = await client.isTransferRecorded(sourceTxHash);
-  if (alreadyRecorded) {
-    throw new AlreadyRecordedError(sourceTxHash);
-  }
 
   const decoded = await decodeErc20Remittance(sourceProvider, sourceTxHash);
 
@@ -49,6 +50,14 @@ export async function submitRemittanceProofForTx(
 
   const proof = await proofService.buildProofForTransaction(sourceTxHash);
 
+  // Dedupe on the value actually recorded on-chain (keccak256(txBytes)),
+  // now that we have it — not on the real source-chain hash, which the
+  // registry never stores.
+  const alreadyRecorded = await client.isTransferRecorded(proof.sourceTxHash);
+  if (alreadyRecorded) {
+    throw new AlreadyRecordedError(proof.realTxHash);
+  }
+
   const tx = await client.submitRemittanceProof(
     borrower,
     proof,
@@ -59,7 +68,8 @@ export async function submitRemittanceProofForTx(
   const receipt = await tx.wait();
 
   return {
-    sourceTxHash,
+    sourceTxHash: proof.realTxHash,
+    onchainSourceTxHash: proof.sourceTxHash,
     borrower,
     onchainTxHash: receipt?.hash ?? tx.hash,
     amount: decoded.amount,

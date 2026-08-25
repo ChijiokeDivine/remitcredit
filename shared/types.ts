@@ -7,9 +7,10 @@ export interface RemittanceProofData {
   chainKey: number;
   blockHeight: number;
   txBytes: string | Uint8Array;
-  merkleProof: UscMerkleProof;
-  continuityProof: UscContinuityProof;
-  sourceTxHash: string;
+  merkleProof: unknown;
+  continuityProof: unknown;
+  sourceTxHash: string;   // keccak256(txBytes) — what the contract needs
+  realTxHash: string;     // the actual source-chain tx hash — for display/lookup only
 }
 
 export interface DecodedRemittance {
