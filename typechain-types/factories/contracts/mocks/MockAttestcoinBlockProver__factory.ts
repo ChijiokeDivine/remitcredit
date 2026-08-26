@@ -77,12 +77,24 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "bytes32",
-        name: "encodedTxHash",
-        type: "bytes32",
+        internalType: "uint64",
+        name: "chainKey",
+        type: "uint64",
+      },
+      {
+        indexed: true,
+        internalType: "uint64",
+        name: "height",
+        type: "uint64",
+      },
+      {
+        indexed: false,
+        internalType: "uint64",
+        name: "transactionIndex",
+        type: "uint64",
       },
     ],
-    name: "Verified",
+    name: "TransactionVerified",
     type: "event",
   },
   {
@@ -158,9 +170,84 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint32",
+        internalType: "uint64",
         name: "",
-        type: "uint32",
+        type: "uint64",
+      },
+      {
+        internalType: "uint64[]",
+        name: "",
+        type: "uint64[]",
+      },
+      {
+        internalType: "bytes[]",
+        name: "encodedTransactions",
+        type: "bytes[]",
+      },
+      {
+        components: [
+          {
+            internalType: "bytes32",
+            name: "root",
+            type: "bytes32",
+          },
+          {
+            components: [
+              {
+                internalType: "bytes32",
+                name: "hash",
+                type: "bytes32",
+              },
+              {
+                internalType: "bool",
+                name: "isLeft",
+                type: "bool",
+              },
+            ],
+            internalType: "struct IAttestcoinBlockProver.MerkleProofEntry[]",
+            name: "siblings",
+            type: "tuple[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.MerkleProof[]",
+        name: "",
+        type: "tuple[]",
+      },
+      {
+        components: [
+          {
+            internalType: "bytes32",
+            name: "lowerEndpointDigest",
+            type: "bytes32",
+          },
+          {
+            internalType: "bytes32[]",
+            name: "roots",
+            type: "bytes32[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.ContinuityProof",
+        name: "",
+        type: "tuple",
+      },
+    ],
+    name: "verify",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "verified",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint64",
+        name: "",
+        type: "uint64",
       },
       {
         internalType: "uint64",
@@ -169,30 +256,136 @@ const _abi = [
       },
       {
         internalType: "bytes",
-        name: "encodedTx",
+        name: "encodedTransaction",
         type: "bytes",
       },
       {
-        internalType: "bytes",
+        components: [
+          {
+            internalType: "bytes32",
+            name: "root",
+            type: "bytes32",
+          },
+          {
+            components: [
+              {
+                internalType: "bytes32",
+                name: "hash",
+                type: "bytes32",
+              },
+              {
+                internalType: "bool",
+                name: "isLeft",
+                type: "bool",
+              },
+            ],
+            internalType: "struct IAttestcoinBlockProver.MerkleProofEntry[]",
+            name: "siblings",
+            type: "tuple[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.MerkleProof",
         name: "",
-        type: "bytes",
+        type: "tuple",
       },
       {
-        internalType: "bytes",
+        components: [
+          {
+            internalType: "bytes32",
+            name: "lowerEndpointDigest",
+            type: "bytes32",
+          },
+          {
+            internalType: "bytes32[]",
+            name: "roots",
+            type: "bytes32[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.ContinuityProof",
         name: "",
-        type: "bytes",
-      },
-      {
-        internalType: "bool",
-        name: "emitEvent",
-        type: "bool",
+        type: "tuple",
       },
     ],
     name: "verify",
     outputs: [
       {
         internalType: "bool",
+        name: "verified",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint64",
+        name: "chainKey",
+        type: "uint64",
+      },
+      {
+        internalType: "uint64",
+        name: "height",
+        type: "uint64",
+      },
+      {
+        internalType: "bytes",
+        name: "encodedTransaction",
+        type: "bytes",
+      },
+      {
+        components: [
+          {
+            internalType: "bytes32",
+            name: "root",
+            type: "bytes32",
+          },
+          {
+            components: [
+              {
+                internalType: "bytes32",
+                name: "hash",
+                type: "bytes32",
+              },
+              {
+                internalType: "bool",
+                name: "isLeft",
+                type: "bool",
+              },
+            ],
+            internalType: "struct IAttestcoinBlockProver.MerkleProofEntry[]",
+            name: "siblings",
+            type: "tuple[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.MerkleProof",
         name: "",
+        type: "tuple",
+      },
+      {
+        components: [
+          {
+            internalType: "bytes32",
+            name: "lowerEndpointDigest",
+            type: "bytes32",
+          },
+          {
+            internalType: "bytes32[]",
+            name: "roots",
+            type: "bytes32[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.ContinuityProof",
+        name: "",
+        type: "tuple",
+      },
+    ],
+    name: "verifyAndEmit",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "verified",
         type: "bool",
       },
     ],
@@ -202,41 +395,72 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint32",
-        name: "",
-        type: "uint32",
+        internalType: "uint64",
+        name: "chainKey",
+        type: "uint64",
       },
       {
         internalType: "uint64[]",
-        name: "",
+        name: "heights",
         type: "uint64[]",
       },
       {
         internalType: "bytes[]",
-        name: "encodedTxs",
+        name: "encodedTransactions",
         type: "bytes[]",
       },
       {
-        internalType: "bytes[]",
+        components: [
+          {
+            internalType: "bytes32",
+            name: "root",
+            type: "bytes32",
+          },
+          {
+            components: [
+              {
+                internalType: "bytes32",
+                name: "hash",
+                type: "bytes32",
+              },
+              {
+                internalType: "bool",
+                name: "isLeft",
+                type: "bool",
+              },
+            ],
+            internalType: "struct IAttestcoinBlockProver.MerkleProofEntry[]",
+            name: "siblings",
+            type: "tuple[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.MerkleProof[]",
         name: "",
-        type: "bytes[]",
+        type: "tuple[]",
       },
       {
-        internalType: "bytes",
+        components: [
+          {
+            internalType: "bytes32",
+            name: "lowerEndpointDigest",
+            type: "bytes32",
+          },
+          {
+            internalType: "bytes32[]",
+            name: "roots",
+            type: "bytes32[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.ContinuityProof",
         name: "",
-        type: "bytes",
-      },
-      {
-        internalType: "bool",
-        name: "emitEvent",
-        type: "bool",
+        type: "tuple",
       },
     ],
-    name: "verifyBatch",
+    name: "verifyAndEmit",
     outputs: [
       {
         internalType: "bool",
-        name: "",
+        name: "verified",
         type: "bool",
       },
     ],
@@ -246,7 +470,7 @@ const _abi = [
 ] as const;
 
 const _bytecode =
-  "0x6080346100bb57601f6106ff38819003918201601f19168301916001600160401b038311848410176100c0578084926020946040528339810103126100bb57516001600160a01b0390818116908190036100bb5780156100a257600080546001600160a01b03198116831782556040519316907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09080a361062890816100d78239f35b604051631e4fbdf760e01b815260006004820152602490fd5b600080fd5b634e487b7160e01b600052604160045260246000fdfe60406080815260048036101561001457600080fd5b600091823560e01c806318ae454d146102d45780635820447f1461022a578063582222a0146101fd5780635ff709a014610186578063715018a6146101295780638da5cb5b146100fd5763f2fde38b1461006d57600080fd5b346100f95760203660031901126100f9576001600160a01b038235818116939192908490036100f55761009e6105c6565b83156100df57505082546001600160a01b0319811683178455167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e08380a380f35b51631e4fbdf760e01b8152908101849052602490fd5b8480fd5b8280fd5b838234610125578160031936011261012557905490516001600160a01b039091168152602090f35b5080fd5b83346101835780600319360112610183576101426105c6565b80546001600160a01b03198116825581906001600160a01b03167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e08280a380f35b80fd5b5090346100f957816003193601126100f95780359067ffffffffffffffff82116101f9576101b6913691016103f1565b6024358015159392908490036100f5576101d9916101d26105c6565b369161045f565b602081519101208352600160205282209060ff8019835416911617905580f35b8380fd5b5090346100f95760203660031901126100f9578160209360ff923581526001855220541690519015158152f35b5090346100f95760c03660031901126100f9576102456103d9565b5067ffffffffffffffff906024358281116100f557610267903690830161042e565b50506044358281116100f557610280903690830161042e565b9290946064358281116101255761029a903690850161042e565b50506084359182116101835750916102bb602095926102cb943691016103f1565b50506102c561041f565b91610520565b90519015158152f35b508290346101255760c0366003190112610125576102f06103d9565b5067ffffffffffffffff9160243583811603610183576044358381116101255761031d90369086016103f1565b936064358181116101f95761033590369088016103f1565b50506084359081116100f957602095610350913691016103f1565b505061035a61041f565b9361036636828461045f565b86815191012083526001865260ff8484205416809581966103d1575b50610393575b505050519015158152f35b7ffd80962e9540d35b7e1c5b2289980b16c1b92208bc2a42634e3290ad70fc3b74916103c091369161045f565b8581519101209180a2838080610388565b905087610382565b6004359063ffffffff821682036103ec57565b600080fd5b9181601f840112156103ec5782359167ffffffffffffffff83116103ec57602083818601950101116103ec57565b60a4359081151582036103ec57565b9181601f840112156103ec5782359167ffffffffffffffff83116103ec576020808501948460051b0101116103ec57565b92919267ffffffffffffffff918281116104b25760405192601f8201601f19908116603f01168401908111848210176104b2576040528294818452818301116103ec578281602093846000960137010152565b634e487b7160e01b600052604160045260246000fd5b919081101561050a5760051b81013590601e19813603018212156103ec57019081359167ffffffffffffffff83116103ec5760200182360381136103ec579190565b634e487b7160e01b600052603260045260246000fd5b9160005b82811061058b5750610538575b5050600190565b60005b8181106105485750610531565b806105596101d260019385876104c8565b602081519101207ffd80962e9540d35b7e1c5b2289980b16c1b92208bc2a42634e3290ad70fc3b74600080a20161053b565b600161059b6101d28386886104c8565b80516020809201206000525260ff60406000205416156105bd57600101610524565b50505050600090565b6000546001600160a01b031633036105da57565b60405163118cdaa760e01b8152336004820152602490fdfea2646970667358221220c9261e9a0188a06d0fe923afb87f22e1d18901b0e15e7d7492c6ce8d9d0030da64736f6c63430008180033";
+  "0x6080346100bb57601f6107d338819003918201601f19168301916001600160401b038311848410176100c0578084926020946040528339810103126100bb57516001600160a01b0390818116908190036100bb5780156100a257600080546001600160a01b03198116831782556040519316907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09080a36106fc90816100d78239f35b604051631e4fbdf760e01b815260006004820152602490fd5b600080fd5b634e487b7160e01b600052604160045260246000fdfe60406080815260048036101561001457600080fd5b600091823560e01c806302f4d167146102cc5780631b5f6f88146102a95780634da3b8951461027e578063582222a0146102515780635ff709a0146101da578063715018a61461017d5780637cc4e2581461013f5780638da5cb5b146101135763f2fde38b1461008357600080fd5b3461010f57602036600319011261010f576001600160a01b0382358181169391929084900361010b576100b461069a565b83156100f557505082546001600160a01b0319811683178455167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e08380a380f35b51631e4fbdf760e01b8152908101849052602490fd5b8480fd5b8280fd5b83823461013b578160031936011261013b57905490516001600160a01b039091168152602090f35b5080fd5b83823461013b5760ff8160209361016561015836610389565b50509150915036916104cd565b85815191012081526001855220541690519015158152f35b83346101d757806003193601126101d75761019661069a565b80546001600160a01b03198116825581906001600160a01b03167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e08280a380f35b80fd5b50903461010f578160031936011261010f5780359067ffffffffffffffff821161024d5761020a91369101610356565b60243580151593929084900361010b5761022d9161022661069a565b36916104cd565b602081519101208352600160205282209060ff8019835416911617905580f35b8380fd5b50903461010f57602036600319011261010f578160209360ff923581526001855220541690519015158152f35b83823461013b576020906102a06102943661043d565b505050939290926105db565b90519015158152f35b83823461013b576020906102a06102bf3661043d565b505050935091505061058e565b83823461013b57906020916102f16102e336610389565b5050959293919536916104cd565b85815191012081526001855260ff83822054169384610316575b505050519015158152f35b857f8a8df984523447f746ce8bccdb04c87025c708eb62a2d070bdffb8945c8f391e9167ffffffffffffffff8091875195865216941692a383808061030b565b9181601f840112156103845782359167ffffffffffffffff8311610384576020838186019501011161038457565b600080fd5b600319919060a0838201126103845767ffffffffffffffff90600435828116810361038457936024358381168103610384579360443584811161038457836103d391600401610356565b94909493606435828111610384576040858284030112610384576004019360843592831161038457826040920301126103845760040190565b9181601f840112156103845782359167ffffffffffffffff8311610384576020808501948460051b01011161038457565b60031960a0828201126103845767ffffffffffffffff926004358481168103610384579360243581811161038457846104789160040161040c565b9490949360443583811161038457826104939160040161040c565b9490949360643581811161038457846104ae9160040161040c565b9490949360843592831161038457826040920301126103845760040190565b92919267ffffffffffffffff918281116105205760405192601f8201601f19908116603f011684019081118482101761052057604052829481845281830111610384578281602093846000960137010152565b634e487b7160e01b600052604160045260246000fd5b91908110156105785760051b81013590601e198136030182121561038457019081359167ffffffffffffffff8311610384576020018236038113610384579190565b634e487b7160e01b600052603260045260246000fd5b9060005b8181106105a157505050600190565b60016105b1610226838587610536565b80516020809201206000525260ff60406000205416156105d357600101610592565b505050600090565b939291909160005b84811061065d57505060005b838110610600575050505050600190565b81811015610578578060051b8301359067ffffffffffffffff91828116809103610384576001927f8a8df984523447f746ce8bccdb04c87025c708eb62a2d070bdffb8945c8f391e60206040519280861684528a1692a3016105ef565b600161066d610226838886610536565b80516020809201206000525260ff604060002054161561068f576001016105e3565b505050505050600090565b6000546001600160a01b031633036106ae57565b60405163118cdaa760e01b8152336004820152602490fdfea26469706673582212203bd54c93f89ba2768f37e8548b2f680d9351576529afdf5fb5629f250007146064736f6c63430008180033";
 
 type MockAttestcoinBlockProverConstructorParams =
   | [signer?: Signer]

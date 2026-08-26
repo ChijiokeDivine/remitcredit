@@ -4,49 +4,79 @@ pragma solidity ^0.8.24;
 
 /// @title IAttestcoinBlockProver
 /// @notice Interface to Creditcoin's native Attestcoin Protocol verifier
-///         precompile. A contract that calls this synchronously, in the
-///         same transaction as its business logic, is what the docs call
-///         an "Attestcoin Smart Contract" (ASC).
+///         precompile, deployed at a fixed address
+///         (0x0000000000000000000000000000000000000FD2 by default).
 ///
-/// @dev The field names here (chainKey, blockHeight, encodedTx, merkleProof,
-///      continuityProof) mirror the signature Creditcoin publishes for the
-///      precompile: `verify(chainKey, blockHeight, encodedTx, merkleProof,
-///      continuityProof) -> bool`. The two proof structs are treated as
-///      opaque ABI-encoded `bytes` here rather than typed structs, since the
-///      exact on-chain struct layout for `TransactionMerkleProof` /
-///      `ContinuityProof` isn't reproduced in the public marketing/docs
-///      pages this repo was built against. Before a mainnet deploy, confirm
-///      the real ABI against the live precompile (conventionally deployed
-///      at a low, reserved address — placeholder below) and update this
-///      interface + PRECOMPILE_ADDRESS in RemittanceMicroLoan if it differs.
-///      Everything else in this codebase is independent of that detail.
+/// @dev This mirrors the precompile's real ABI exactly (confirmed against
+///      the gluwa cc-next-query-builder package's bundled block_prover.json
+///      — the same contract family as the gluwa usc-sdk package):
+///        - chainKey / height are uint64, not uint32/uint64 as originally
+///          guessed.
+///        - merkleProof / continuityProof are structured tuples on-chain,
+///          NOT opaque bytes. The off-chain worker still sends them as
+///          ABI-encoded bytes (see shared/services/proofEncoding.ts) — the
+///          caller in RemittanceMicroLoan is responsible for
+///          `abi.decode`-ing them into these structs immediately before
+///          calling this interface.
+///        - There is no `emitEvent` boolean parameter. Instead there are
+///          two distinct functions: `verify` (view, no event, no revert
+///          side effects beyond the read) and `verifyAndEmit`
+///          (state-changing, reverts on failed verification, emits
+///          `TransactionVerified`). RemittanceMicroLoan uses
+///          `verifyAndEmit` since it wants a real on-chain proof event and
+///          a hard revert on failure.
 interface IAttestcoinBlockProver {
-    /// @notice Verify a single source-chain transaction's inclusion via
-    ///         Merkle proof + continuity proof, synchronously.
-    /// @param chainKey Creditcoin-internal identifier for the source chain
-    ///        (NOT the same as the chain's EVM chainId — resolve it via
-    ///        PrecompileChainInfoProvider off-chain, see shared/services/chainInfoService.ts).
-    /// @param blockHeight Height of the source-chain block containing the tx.
-    /// @param encodedTx RLP-encoded (or SDK-provided) raw transaction bytes.
-    /// @param merkleProof ABI-encoded Merkle inclusion proof for the tx within its block.
-    /// @param continuityProof ABI-encoded proof chaining the block back to an attested checkpoint.
-    /// @return verified True if the transaction is proven included and attested.
+    struct MerkleProofEntry {
+        bytes32 hash;
+        bool isLeft;
+    }
+
+    struct MerkleProof {
+        bytes32 root;
+        MerkleProofEntry[] siblings;
+    }
+
+    struct ContinuityProof {
+        bytes32 lowerEndpointDigest;
+        bytes32[] roots;
+    }
+
+    event TransactionVerified(uint64 indexed chainKey, uint64 indexed height, uint64 transactionIndex);
+
+    /// @notice Read-only verification — no event, no state change.
     function verify(
-        uint32 chainKey,
-        uint64 blockHeight,
-        bytes calldata encodedTx,
-        bytes calldata merkleProof,
-        bytes calldata continuityProof,
-        bool emitEvent
+        uint64 chainKey,
+        uint64 height,
+        bytes calldata encodedTransaction,
+        MerkleProof calldata merkleProof,
+        ContinuityProof calldata continuityProof
+    ) external view returns (bool verified);
+
+    /// @notice State-changing verification. Reverts on failed verification;
+    ///         emits TransactionVerified on success.
+    function verifyAndEmit(
+        uint64 chainKey,
+        uint64 height,
+        bytes calldata encodedTransaction,
+        MerkleProof calldata merkleProof,
+        ContinuityProof calldata continuityProof
     ) external returns (bool verified);
 
-    /// @notice Batch variant — up to 10 transactions sharing one continuity proof.
-    function verifyBatch(
-        uint32 chainKey,
-        uint64[] calldata blockHeights,
-        bytes[] calldata encodedTxs,
-        bytes[] calldata merkleProofs,
-        bytes calldata continuityProof,
-        bool emitEvent
+    /// @notice Batch read-only variant — up to 10 transactions sharing one continuity proof.
+    function verify(
+        uint64 chainKey,
+        uint64[] calldata heights,
+        bytes[] calldata encodedTransactions,
+        MerkleProof[] calldata merkleProofs,
+        ContinuityProof calldata sharedContinuityProof
+    ) external view returns (bool verified);
+
+    /// @notice Batch state-changing variant.
+    function verifyAndEmit(
+        uint64 chainKey,
+        uint64[] calldata heights,
+        bytes[] calldata encodedTransactions,
+        MerkleProof[] calldata merkleProofs,
+        ContinuityProof calldata sharedContinuityProof
     ) external returns (bool verified);
 }

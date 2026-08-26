@@ -83,7 +83,7 @@ export default function AdminGrid() {
       <div className="mx-auto w-full max-w-[1600px]">
         {/* Section heading */}
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="mt-4 font-[family-name:var(--font-google-sans)] text-[36px] font-normal leading-[1.1] tracking-[-0.01em] text-[#10202E] sm:text-[44px] md:text-[4rem]">
+          <h2 className="mt-4 font-[family-name:var(--font-google-sans)] text-[27px] font-normal leading-[1.1] tracking-[-0.01em] text-[#10202E] sm:text-[30px] md:text-[3rem]">
             Six things that finally count.
             <br />
             <span>Zero paperwork.</span>
@@ -97,11 +97,11 @@ export default function AdminGrid() {
               key={title}
               className="group flex min-h-[280px] flex-col rounded-[28px] bg-white p-8 transition duration-300 md:min-h-[440px] md:p-10"
             >
-              <h3 className="text-xl font-semibold text-[#10202E] md:text-[22px]">
+              <h3 className="text-xl font-semibold font-[family-name:var(--font-serif)] text-[#10202E] md:text-[22px]">
                 {title}
               </h3>
 
-              <p className="mt-3 text-[15px] leading-relaxed text-[#4B5B66] md:text-base">
+              <p className="mt-3 text-[12px]  text-[#4B5B66] md:text-[13px]">
                 {description}
               </p>
 

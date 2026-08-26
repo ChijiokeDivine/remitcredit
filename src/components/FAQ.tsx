@@ -50,16 +50,16 @@ export default function FAQ() {
 
   return (
     <section className="relative w-full bg-[#F3F5F4] px-6 py-24 md:py-32">
-      <div className="mx-auto w-full max-w-[1100px]">
+      <div className="mx-auto w-full max-w-[860px]">
         {/* Section heading */}
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="mt-4 font-[family-name:var(--font-serif)] text-[36px] font-normal leading-[1.1] tracking-[-0.01em] text-[#10202E] sm:text-[44px] md:text-[4rem]">
+          <h2 className="mt-4 font-[family-name:var(--font-serif)] text-[27px] font-normal leading-[1.1] tracking-[-0.01em] text-[#10202E] sm:text-[30px] md:text-[2.5rem]">
             Frequently Asked Questions
           </h2>
         </div>
 
         {/* FAQ list */}
-        <div className="mt-16 space-y-4 md:mt-20 md:space-y-5">
+        <div className="mt-16 space-y-3 md:mt-20 md:space-y-3">
           {FAQS.map((item, index) => {
             const isOpen = openIndex === index;
 
@@ -71,10 +71,10 @@ export default function FAQ() {
                 <button
                   type="button"
                   onClick={() => toggle(index)}
-                  className="flex w-full items-center justify-between gap-6 px-8 py-7 text-left md:px-10 md:py-8"
+                  className="flex w-full items-center justify-between gap-6 px-8 py-5 text-left md:px-10 md:py-5"
                   aria-expanded={isOpen}
                 >
-                  <span className="text-[17px] font-medium leading-snug text-[#10202E] md:text-[19px]">
+                  <span className="text-[17px] font-medium leading-snug text-[#10202E] md:text-[15px]">
                     {item.question}
                   </span>
 
@@ -99,7 +99,7 @@ export default function FAQ() {
                   }`}
                 >
                   <div className="overflow-hidden">
-                    <p className="px-8 pb-8 text-[15px] leading-[1.6] text-[#10202E]/70 md:px-10 md:pb-9 md:text-base">
+                    <p className="px-8 pb-8 text-[12px] leading-[1.6] text-[#10202E]/70 md:px-10 md:pb-9 md:text-[13px]">
                       {item.answer}
                     </p>
                   </div>

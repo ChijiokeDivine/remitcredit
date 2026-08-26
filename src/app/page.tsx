@@ -51,7 +51,7 @@ function RotatingExample() {
       }`}
     >
 
-      <span className="text-sm font-medium md:text-[15px]">{label}</span>
+      <span className="text-sm font-medium md:text-[14px]">{label}</span>
     </div>
   );
 }
@@ -99,29 +99,29 @@ export default function Home() {
           <nav className="flex items-center gap-1.5 rounded-md bg-white/10 p-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.15)] ring-1 ring-white/25 backdrop-blur-md">
             <Link
               href="/"
-              className="flex items-center gap-1.5 rounded-md bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white/90 md:px-5 md:py-2.5 md:text-[15px]"
+              className="flex items-center gap-1.5 rounded-md bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white/90 md:px-4 md:py-2.5 md:text-[12px]"
             >
 
-              <span className="font-[family-name:var(--font-serif)] italic">RemitCredit</span>
+              <span className="font-[family-name:var(--font-serif)] italic ">RemitCredit</span>
             </Link>
 
             <Link
               href="/company"
-              className="rounded-md bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-5 md:py-2.5 md:text-[15px]"
+              className="rounded-md bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-4 md:py-2.5 md:text-[12px]"
             >
               Company
             </Link>
 
             <Link
               href="/demo"
-              className="rounded-md bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-5 md:py-2.5 md:text-[15px]"
+              className="rounded-md bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-4 md:py-2.5 md:text-[12px]"
             >
               Demo
             </Link>
 
             <Link
               href="/onboarding"
-              className="rounded-md bg-white/20 px-4 py-2 text-sm font-medium text-black ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-5 md:py-2.5 md:text-[15px] hidden md:block"
+              className="rounded-md bg-white/20 px-4 py-2 text-sm font-medium text-black ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-4 md:py-2.5 md:text-[12px] hidden md:block"
             >
               Login
             </Link>
@@ -130,13 +130,13 @@ export default function Home() {
 
         {/* Hero content */}
         <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center">
-          <h1 className="font-[family-name:var(--font-serif)] text-[42px] font-normal leading-[1.05] tracking-[-0.01em] text-white sm:text-[52px] md:text-[68px] lg:text-[78px]">
+          <h1 className="font-[family-name:var(--font-serif)] text-[38px] font-normal leading-[1.05] tracking-[-0.01em] text-white sm:text-[52px] md:text-[56px] lg:text-[60px]">
             Your remittances
             <br />
             <span className="italic">are real income.</span>
           </h1>
 
-          <p className="mt-7 text-base font-medium text-white md:mt-8 md:text-xl">
+          <p className="mt-7 text-sm font-medium text-white md:mt-8 md:text-md">
           Now they unlock real credit.
           </p>
 
@@ -154,7 +154,7 @@ export default function Home() {
 
             <Link
               href="/onboarding"
-              className="rounded-md bg-white/20 px-4 py-2 text-sm font-medium text-black ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-5 md:py-2.5 md:text-[15px] md:hidden block"
+              className="rounded-md bg-white/20 px-4 py-2 text-sm font-medium text-black ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:px-4 md:py-2.5 md:text-[15px] md:hidden block"
             >
               Check eligibility
             </Link>

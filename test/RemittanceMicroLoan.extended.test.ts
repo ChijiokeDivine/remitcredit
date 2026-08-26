@@ -8,11 +8,12 @@
 // in what was reviewed here, so this file assumes (matching the naming and
 // usage already established in RemittanceMicroLoan.test.ts):
 //   - prover.setVerified(encodedTxBytes, bool) marks a specific encodedTx as
-//     verified/unverified for both verify() and verifyBatch().
-//   - verifyBatch(...) returns true only if every encodedTx in the batch has
-//     been marked verified.
+//     verified/unverified for both verify() and verifyAndEmit() (single and
+//     batch) — only encodedTx content is checked, proof structs are ignored.
+//   - verifyAndEmit(...) (batch) returns true only if every encodedTx in the
+//     batch has been marked verified.
 //   - MockStablecoin exposes a standard ERC20 interface plus mint(to, amount).
-// If the actual mocks differ (e.g. verifyBatch keys off a single hash, or
+// If the actual mocks differ (e.g. verifyAndEmit keys off a single hash, or
 // setVerified takes a hash instead of raw bytes), adjust submitBatch() below
 // accordingly — everything downstream of it doesn't depend on that detail.
 //
@@ -23,11 +24,31 @@
 // requestCreditReview remain open-caller — anyone can submit them on a
 // borrower's behalf, since they only ever act on data that's independently
 // verified (the precompile) or read-only (the registry).
+//
+// PROOF ENCODING: RemittanceMicroLoan now abi.decodes merkleProof/continuityProof
+// into IAttestcoinBlockProver.MerkleProof/.ContinuityProof structs before
+// calling the precompile — so these can no longer be passed as bare "0x".
+// dummyMerkleProof()/dummyContinuityProof() below produce validly-shaped but
+// empty structs (root/digest = zero, no siblings/roots), which is all that's
+// needed since MockAttestcoinBlockProver never inspects their contents —
+// it only checks encodedTx against the whitelist set via setVerified(...).
 import "@nomicfoundation/hardhat-ethers";
 import { expect } from "chai";
 import hre from "hardhat";
 const { ethers } = hre;
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+
+const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+const MERKLE_PROOF_TYPE = "tuple(bytes32 root, tuple(bytes32 hash, bool isLeft)[] siblings)";
+const CONTINUITY_PROOF_TYPE = "tuple(bytes32 lowerEndpointDigest, bytes32[] roots)";
+
+function dummyMerkleProof(): string {
+  return abiCoder.encode([MERKLE_PROOF_TYPE], [{ root: ethers.ZeroHash, siblings: [] }]);
+}
+
+function dummyContinuityProof(): string {
+  return abiCoder.encode([CONTINUITY_PROOF_TYPE], [{ lowerEndpointDigest: ethers.ZeroHash, roots: [] }]);
+}
 
 describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
   let owner: HardhatEthersSigner;
@@ -97,8 +118,8 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
       1,
       1_000_000,
       encodedTx,
-      "0x",
-      "0x",
+      dummyMerkleProof(),
+      dummyContinuityProof(),
       familySender.address,
       amount,
       timestamp,
@@ -265,8 +286,8 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
             1,
             1,
             encodedTx,
-            "0x",
-            "0x",
+            dummyMerkleProof(),
+            dummyContinuityProof(),
             familySender.address,
             ethers.parseUnits("50", 6),
             1,
@@ -356,8 +377,8 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
             1,
             1,
             encodedTx,
-            "0x",
-            "0x",
+            dummyMerkleProof(),
+            dummyContinuityProof(),
             familySender.address,
             ethers.parseUnits("50", 6),
             1,
@@ -420,8 +441,8 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
             1,
             1,
             encodedTx,
-            "0x",
-            "0x",
+            dummyMerkleProof(),
+            dummyContinuityProof(),
             familySender.address,
             ethers.parseUnits("50", 6),
             1,
@@ -451,8 +472,8 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
             1,
             1,
             encodedTx,
-            "0x",
-            "0x",
+            dummyMerkleProof(),
+            dummyContinuityProof(),
             secondSender.address,
             ethers.parseUnits("50", 6),
             1,
@@ -477,8 +498,8 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
             1,
             1,
             encodedTx,
-            "0x",
-            "0x",
+            dummyMerkleProof(),
+            dummyContinuityProof(),
             familySender.address,
             ethers.parseUnits("50", 6),
             1,
@@ -501,8 +522,8 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
             1,
             1,
             encodedTx,
-            "0x",
-            "0x",
+            dummyMerkleProof(),
+            dummyContinuityProof(),
             familySender.address,
             ethers.parseUnits("50", 6),
             123,
@@ -526,7 +547,7 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
       return {
         blockHeights: entries.map(() => 1_000_000),
         encodedTxs,
-        merkleProofs: entries.map(() => "0x"),
+        merkleProofs: entries.map(() => dummyMerkleProof()),
         claimedSenders: entries.map(() => familySender.address),
         claimedAmounts: entries.map((e) => e.amount),
         claimedTimestamps: entries.map((e) => e.timestamp),
@@ -550,7 +571,7 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
           batch.blockHeights,
           batch.encodedTxs,
           batch.merkleProofs,
-          "0x",
+          dummyContinuityProof(),
           batch.claimedSenders,
           batch.claimedAmounts,
           batch.claimedTimestamps,
@@ -580,7 +601,7 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
             batch.blockHeights,
             batch.encodedTxs,
             batch.merkleProofs,
-            "0x",
+            dummyContinuityProof(),
             batch.claimedSenders,
             batch.claimedAmounts,
             batch.claimedTimestamps,
@@ -608,7 +629,7 @@ describe("RemitCredit — RemittanceMicroLoan (extended)", () => {
             batch.blockHeights,
             batch.encodedTxs,
             batch.merkleProofs,
-            "0x",
+            dummyContinuityProof(),
             batch.claimedSenders,
             batch.claimedAmounts,
             batch.claimedTimestamps,

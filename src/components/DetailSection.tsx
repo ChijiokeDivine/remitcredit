@@ -20,13 +20,13 @@ export default function DetailSection() {
         {/* Content */}
         <div className="relative flex min-h-[520px] flex-col bg-[#f5f2e9] px-8 py-12 lg:min-h-[calc(100vh-40px)] lg:px-14 xl:px-20">
           <div className="flex justify-center lg:justify-end">
-            <h2 className="max-w-[580px] text-center text-black font-[family-name:var(--font-serif)] text-[clamp(2.6rem,4.6vw,7rem)] font-black uppercase leading-[0.82] tracking-[-0.065em] lg:text-right">
+            <h2 className="max-w-[580px] text-center text-black font-[family-name:var(--font-serif)] text-[clamp(1.6rem,4.3vw,5rem)] font-black uppercase leading-[0.82] tracking-[-0.065em] lg:text-right">
               Recipients
             </h2>
           </div>
 
           <div className="flex justify-center pt-10 lg:justify-end">
-            <p className="max-w-[380px] text-center font-[family-name:var(--font-google-sans)] text-base leading-[1.35] text-black/70 lg:text-right">
+            <p className="max-w-[380px] text-center font-[family-name:var(--font-google-sans)] md:text-md text-sm  leading-[1.35] text-black/70 lg:text-right">
               You already receive regular support from family abroad.
               RemitCredit turns that history into a credit line you can actually use.
             </p>
@@ -50,13 +50,13 @@ export default function DetailSection() {
         {/* Content */}
         <div className="relative flex min-h-[520px] flex-col bg-[#f5f2e9] px-8 py-12 lg:min-h-[calc(100vh-40px)] lg:px-14 xl:px-20">
           <div className="flex justify-center lg:justify-end">
-            <h2 className="max-w-[580px] text-black text-center font-[family-name:var(--font-serif)] text-[clamp(2.6rem,4.6vw,7rem)] font-black uppercase leading-[0.82] tracking-[-0.065em] lg:text-right">
+            <h2 className="max-w-[580px] text-black text-center font-[family-name:var(--font-serif)] text-[clamp(1.6rem,4.3vw,5rem)] font-black uppercase leading-[0.82] tracking-[-0.065em] lg:text-right">
               Senders
             </h2>
           </div>
 
           <div className="flex justify-center pt-10 lg:justify-end">
-            <p className="max-w-[380px] text-center font-[family-name:var(--font-google-sans)] text-base leading-[1.35] text-black/70 lg:text-right">
+            <p className="max-w-[380px] text-center font-[family-name:var(--font-google-sans)] md:text-md text-sm  leading-[1.35] text-black/70 lg:text-right">
               Keep sending exactly as you do now.
               Your transfers quietly build credit for the person you support.
               No new steps. No new apps.
@@ -81,13 +81,13 @@ export default function DetailSection() {
         {/* Content */}
         <div className="relative flex md:min-h-[520px] min-h-[400px] flex-col bg-[#f5f2e9] px-8 py-12 lg:min-h-[calc(100vh-40px)] lg:px-14 xl:px-20">
           <div className="flex justify-center lg:justify-end">
-            <h2 className="max-w-[580px] text-center text-black font-[family-name:var(--font-serif)] text-[clamp(2.6rem,4.6vw,7rem)] font-black uppercase leading-[0.82] tracking-[-0.065em] lg:text-right">
+            <h2 className="max-w-[580px] text-center text-black font-[family-name:var(--font-serif)] text-[clamp(1.6rem,4.3vw,5rem)] font-black uppercase leading-[0.82] tracking-[-0.065em] lg:text-right">
               How it works
             </h2>
           </div>
 
           <div className="flex justify-center pt-10 lg:justify-end">
-            <p className="max-w-[380px] text-center font-[family-name:var(--font-google-sans)] text-base leading-[1.35] text-black/70 lg:text-right">
+            <p className="max-w-[380px] text-center font-[family-name:var(--font-google-sans)] md:text-md text-sm  leading-[1.35] text-black/70 lg:text-right">
               Declare senders. We detect and prove every transfer.
               A transparent engine sets your limit.
               You borrow when you need it.

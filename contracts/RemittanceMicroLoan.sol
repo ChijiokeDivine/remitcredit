@@ -49,6 +49,14 @@ import {CreditDecisionEngine} from "./CreditDecisionEngine.sol";
 ///      eliminate) what a misbehaving worker could misreport. Moving the
 ///      decode on-chain closes that gap and is the natural next hardening
 ///      step.
+///
+///      Precompile call shape: `merkleProof` and `continuityProof` arrive
+///      here as opaque ABI-encoded bytes (encoded off-chain by
+///      shared/services/proofEncoding.ts to match
+///      IAttestcoinBlockProver.MerkleProof / .ContinuityProof exactly).
+///      They're decoded via `abi.decode` immediately before the precompile
+///      call, since the precompile itself expects them as structured
+///      tuples, not raw bytes — see IAttestcoinBlockProver.sol for why.
 contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -256,7 +264,7 @@ contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
     ///         happens synchronously, in this same transaction.
     function submitRemittanceProof(
         address borrower,
-        uint32 chainKey,
+        uint64 chainKey,
         uint64 blockHeight,
         bytes calldata encodedTx,
         bytes calldata merkleProof,
@@ -271,7 +279,15 @@ contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
         if (!_isDeclaredSender(borrower, claimedSender)) revert SenderNotDeclared(claimedSender);
         if (sourceTxHash != keccak256(encodedTx)) revert TxHashMismatch();
 
-        bool verified = precompile.verify(chainKey, blockHeight, encodedTx, merkleProof, continuityProof, true);
+        // The precompile expects these as structured tuples, not opaque
+        // bytes — decode what the off-chain worker ABI-encoded before
+        // calling it. See IAttestcoinBlockProver.sol for the exact shapes.
+        IAttestcoinBlockProver.MerkleProof memory decodedMerkle =
+            abi.decode(merkleProof, (IAttestcoinBlockProver.MerkleProof));
+        IAttestcoinBlockProver.ContinuityProof memory decodedContinuity =
+            abi.decode(continuityProof, (IAttestcoinBlockProver.ContinuityProof));
+
+        bool verified = precompile.verifyAndEmit(chainKey, blockHeight, encodedTx, decodedMerkle, decodedContinuity);
         if (!verified) revert ProofNotVerified();
 
         registry.recordVerifiedTransfer(borrower, claimedSender, claimedAmount, claimedTimestamp, sourceTxHash);
@@ -285,7 +301,7 @@ contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
     ///         history can be verified in one call instead of one-by-one.
     function submitRemittanceProofBatch(
         address borrower,
-        uint32 chainKey,
+        uint64 chainKey,
         uint64[] calldata blockHeights,
         bytes[] calldata encodedTxs,
         bytes[] calldata merkleProofs,
@@ -299,12 +315,18 @@ contract RemittanceMicroLoan is Ownable, Pausable, ReentrancyGuard {
         if (!b.registered) revert NotRegistered();
 
         uint256 n = encodedTxs.length;
+        IAttestcoinBlockProver.MerkleProof[] memory decodedMerkles =
+            new IAttestcoinBlockProver.MerkleProof[](n);
         for (uint256 i; i < n; ++i) {
             if (!_isDeclaredSender(borrower, claimedSenders[i])) revert SenderNotDeclared(claimedSenders[i]);
             if (sourceTxHashes[i] != keccak256(encodedTxs[i])) revert TxHashMismatch();
+            decodedMerkles[i] = abi.decode(merkleProofs[i], (IAttestcoinBlockProver.MerkleProof));
         }
+        IAttestcoinBlockProver.ContinuityProof memory decodedContinuity =
+            abi.decode(continuityProof, (IAttestcoinBlockProver.ContinuityProof));
 
-        bool verified = precompile.verifyBatch(chainKey, blockHeights, encodedTxs, merkleProofs, continuityProof, true);
+        bool verified =
+            precompile.verifyAndEmit(chainKey, blockHeights, encodedTxs, decodedMerkles, decodedContinuity);
         if (!verified) revert ProofNotVerified();
 
         for (uint256 i; i < n; ++i) {

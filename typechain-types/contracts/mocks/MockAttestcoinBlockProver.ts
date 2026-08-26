@@ -23,6 +23,38 @@ import type {
   TypedContractMethod,
 } from "../../common";
 
+export declare namespace IAttestcoinBlockProver {
+  export type MerkleProofEntryStruct = { hash: BytesLike; isLeft: boolean };
+
+  export type MerkleProofEntryStructOutput = [hash: string, isLeft: boolean] & {
+    hash: string;
+    isLeft: boolean;
+  };
+
+  export type MerkleProofStruct = {
+    root: BytesLike;
+    siblings: IAttestcoinBlockProver.MerkleProofEntryStruct[];
+  };
+
+  export type MerkleProofStructOutput = [
+    root: string,
+    siblings: IAttestcoinBlockProver.MerkleProofEntryStructOutput[]
+  ] & {
+    root: string;
+    siblings: IAttestcoinBlockProver.MerkleProofEntryStructOutput[];
+  };
+
+  export type ContinuityProofStruct = {
+    lowerEndpointDigest: BytesLike;
+    roots: BytesLike[];
+  };
+
+  export type ContinuityProofStructOutput = [
+    lowerEndpointDigest: string,
+    roots: string[]
+  ] & { lowerEndpointDigest: string; roots: string[] };
+}
+
 export interface MockAttestcoinBlockProverInterface extends Interface {
   getFunction(
     nameOrSignature:
@@ -31,12 +63,14 @@ export interface MockAttestcoinBlockProverInterface extends Interface {
       | "setVerified"
       | "transferOwnership"
       | "verifiedTxHashes"
-      | "verify"
-      | "verifyBatch"
+      | "verify(uint64,uint64[],bytes[],(bytes32,(bytes32,bool)[])[],(bytes32,bytes32[]))"
+      | "verify(uint64,uint64,bytes,(bytes32,(bytes32,bool)[]),(bytes32,bytes32[]))"
+      | "verifyAndEmit(uint64,uint64,bytes,(bytes32,(bytes32,bool)[]),(bytes32,bytes32[]))"
+      | "verifyAndEmit(uint64,uint64[],bytes[],(bytes32,(bytes32,bool)[])[],(bytes32,bytes32[]))"
   ): FunctionFragment;
 
   getEvent(
-    nameOrSignatureOrTopic: "OwnershipTransferred" | "Verified"
+    nameOrSignatureOrTopic: "OwnershipTransferred" | "TransactionVerified"
   ): EventFragment;
 
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
@@ -57,25 +91,43 @@ export interface MockAttestcoinBlockProverInterface extends Interface {
     values: [BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "verify",
-    values: [
-      BigNumberish,
-      BigNumberish,
-      BytesLike,
-      BytesLike,
-      BytesLike,
-      boolean
-    ]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "verifyBatch",
+    functionFragment: "verify(uint64,uint64[],bytes[],(bytes32,(bytes32,bool)[])[],(bytes32,bytes32[]))",
     values: [
       BigNumberish,
       BigNumberish[],
       BytesLike[],
-      BytesLike[],
+      IAttestcoinBlockProver.MerkleProofStruct[],
+      IAttestcoinBlockProver.ContinuityProofStruct
+    ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "verify(uint64,uint64,bytes,(bytes32,(bytes32,bool)[]),(bytes32,bytes32[]))",
+    values: [
+      BigNumberish,
+      BigNumberish,
       BytesLike,
-      boolean
+      IAttestcoinBlockProver.MerkleProofStruct,
+      IAttestcoinBlockProver.ContinuityProofStruct
+    ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "verifyAndEmit(uint64,uint64,bytes,(bytes32,(bytes32,bool)[]),(bytes32,bytes32[]))",
+    values: [
+      BigNumberish,
+      BigNumberish,
+      BytesLike,
+      IAttestcoinBlockProver.MerkleProofStruct,
+      IAttestcoinBlockProver.ContinuityProofStruct
+    ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "verifyAndEmit(uint64,uint64[],bytes[],(bytes32,(bytes32,bool)[])[],(bytes32,bytes32[]))",
+    values: [
+      BigNumberish,
+      BigNumberish[],
+      BytesLike[],
+      IAttestcoinBlockProver.MerkleProofStruct[],
+      IAttestcoinBlockProver.ContinuityProofStruct
     ]
   ): string;
 
@@ -96,9 +148,20 @@ export interface MockAttestcoinBlockProverInterface extends Interface {
     functionFragment: "verifiedTxHashes",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "verify", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "verifyBatch",
+    functionFragment: "verify(uint64,uint64[],bytes[],(bytes32,(bytes32,bool)[])[],(bytes32,bytes32[]))",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "verify(uint64,uint64,bytes,(bytes32,(bytes32,bool)[]),(bytes32,bytes32[]))",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "verifyAndEmit(uint64,uint64,bytes,(bytes32,(bytes32,bool)[]),(bytes32,bytes32[]))",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "verifyAndEmit(uint64,uint64[],bytes[],(bytes32,(bytes32,bool)[])[],(bytes32,bytes32[]))",
     data: BytesLike
   ): Result;
 }
@@ -116,11 +179,21 @@ export namespace OwnershipTransferredEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export namespace VerifiedEvent {
-  export type InputTuple = [encodedTxHash: BytesLike];
-  export type OutputTuple = [encodedTxHash: string];
+export namespace TransactionVerifiedEvent {
+  export type InputTuple = [
+    chainKey: BigNumberish,
+    height: BigNumberish,
+    transactionIndex: BigNumberish
+  ];
+  export type OutputTuple = [
+    chainKey: bigint,
+    height: bigint,
+    transactionIndex: bigint
+  ];
   export interface OutputObject {
-    encodedTxHash: string;
+    chainKey: bigint;
+    height: bigint;
+    transactionIndex: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -189,27 +262,49 @@ export interface MockAttestcoinBlockProver extends BaseContract {
 
   verifiedTxHashes: TypedContractMethod<[arg0: BytesLike], [boolean], "view">;
 
-  verify: TypedContractMethod<
+  "verify(uint64,uint64[],bytes[],(bytes32,(bytes32,bool)[])[],(bytes32,bytes32[]))": TypedContractMethod<
+    [
+      arg0: BigNumberish,
+      arg1: BigNumberish[],
+      encodedTransactions: BytesLike[],
+      arg3: IAttestcoinBlockProver.MerkleProofStruct[],
+      arg4: IAttestcoinBlockProver.ContinuityProofStruct
+    ],
+    [boolean],
+    "view"
+  >;
+
+  "verify(uint64,uint64,bytes,(bytes32,(bytes32,bool)[]),(bytes32,bytes32[]))": TypedContractMethod<
     [
       arg0: BigNumberish,
       arg1: BigNumberish,
-      encodedTx: BytesLike,
-      arg3: BytesLike,
-      arg4: BytesLike,
-      emitEvent: boolean
+      encodedTransaction: BytesLike,
+      arg3: IAttestcoinBlockProver.MerkleProofStruct,
+      arg4: IAttestcoinBlockProver.ContinuityProofStruct
+    ],
+    [boolean],
+    "view"
+  >;
+
+  "verifyAndEmit(uint64,uint64,bytes,(bytes32,(bytes32,bool)[]),(bytes32,bytes32[]))": TypedContractMethod<
+    [
+      chainKey: BigNumberish,
+      height: BigNumberish,
+      encodedTransaction: BytesLike,
+      arg3: IAttestcoinBlockProver.MerkleProofStruct,
+      arg4: IAttestcoinBlockProver.ContinuityProofStruct
     ],
     [boolean],
     "nonpayable"
   >;
 
-  verifyBatch: TypedContractMethod<
+  "verifyAndEmit(uint64,uint64[],bytes[],(bytes32,(bytes32,bool)[])[],(bytes32,bytes32[]))": TypedContractMethod<
     [
-      arg0: BigNumberish,
-      arg1: BigNumberish[],
-      encodedTxs: BytesLike[],
-      arg3: BytesLike[],
-      arg4: BytesLike,
-      emitEvent: boolean
+      chainKey: BigNumberish,
+      heights: BigNumberish[],
+      encodedTransactions: BytesLike[],
+      arg3: IAttestcoinBlockProver.MerkleProofStruct[],
+      arg4: IAttestcoinBlockProver.ContinuityProofStruct
     ],
     [boolean],
     "nonpayable"
@@ -239,29 +334,53 @@ export interface MockAttestcoinBlockProver extends BaseContract {
     nameOrSignature: "verifiedTxHashes"
   ): TypedContractMethod<[arg0: BytesLike], [boolean], "view">;
   getFunction(
-    nameOrSignature: "verify"
+    nameOrSignature: "verify(uint64,uint64[],bytes[],(bytes32,(bytes32,bool)[])[],(bytes32,bytes32[]))"
+  ): TypedContractMethod<
+    [
+      arg0: BigNumberish,
+      arg1: BigNumberish[],
+      encodedTransactions: BytesLike[],
+      arg3: IAttestcoinBlockProver.MerkleProofStruct[],
+      arg4: IAttestcoinBlockProver.ContinuityProofStruct
+    ],
+    [boolean],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "verify(uint64,uint64,bytes,(bytes32,(bytes32,bool)[]),(bytes32,bytes32[]))"
   ): TypedContractMethod<
     [
       arg0: BigNumberish,
       arg1: BigNumberish,
-      encodedTx: BytesLike,
-      arg3: BytesLike,
-      arg4: BytesLike,
-      emitEvent: boolean
+      encodedTransaction: BytesLike,
+      arg3: IAttestcoinBlockProver.MerkleProofStruct,
+      arg4: IAttestcoinBlockProver.ContinuityProofStruct
+    ],
+    [boolean],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "verifyAndEmit(uint64,uint64,bytes,(bytes32,(bytes32,bool)[]),(bytes32,bytes32[]))"
+  ): TypedContractMethod<
+    [
+      chainKey: BigNumberish,
+      height: BigNumberish,
+      encodedTransaction: BytesLike,
+      arg3: IAttestcoinBlockProver.MerkleProofStruct,
+      arg4: IAttestcoinBlockProver.ContinuityProofStruct
     ],
     [boolean],
     "nonpayable"
   >;
   getFunction(
-    nameOrSignature: "verifyBatch"
+    nameOrSignature: "verifyAndEmit(uint64,uint64[],bytes[],(bytes32,(bytes32,bool)[])[],(bytes32,bytes32[]))"
   ): TypedContractMethod<
     [
-      arg0: BigNumberish,
-      arg1: BigNumberish[],
-      encodedTxs: BytesLike[],
-      arg3: BytesLike[],
-      arg4: BytesLike,
-      emitEvent: boolean
+      chainKey: BigNumberish,
+      heights: BigNumberish[],
+      encodedTransactions: BytesLike[],
+      arg3: IAttestcoinBlockProver.MerkleProofStruct[],
+      arg4: IAttestcoinBlockProver.ContinuityProofStruct
     ],
     [boolean],
     "nonpayable"
@@ -275,11 +394,11 @@ export interface MockAttestcoinBlockProver extends BaseContract {
     OwnershipTransferredEvent.OutputObject
   >;
   getEvent(
-    key: "Verified"
+    key: "TransactionVerified"
   ): TypedContractEvent<
-    VerifiedEvent.InputTuple,
-    VerifiedEvent.OutputTuple,
-    VerifiedEvent.OutputObject
+    TransactionVerifiedEvent.InputTuple,
+    TransactionVerifiedEvent.OutputTuple,
+    TransactionVerifiedEvent.OutputObject
   >;
 
   filters: {
@@ -294,15 +413,15 @@ export interface MockAttestcoinBlockProver extends BaseContract {
       OwnershipTransferredEvent.OutputObject
     >;
 
-    "Verified(bytes32)": TypedContractEvent<
-      VerifiedEvent.InputTuple,
-      VerifiedEvent.OutputTuple,
-      VerifiedEvent.OutputObject
+    "TransactionVerified(uint64,uint64,uint64)": TypedContractEvent<
+      TransactionVerifiedEvent.InputTuple,
+      TransactionVerifiedEvent.OutputTuple,
+      TransactionVerifiedEvent.OutputObject
     >;
-    Verified: TypedContractEvent<
-      VerifiedEvent.InputTuple,
-      VerifiedEvent.OutputTuple,
-      VerifiedEvent.OutputObject
+    TransactionVerified: TypedContractEvent<
+      TransactionVerifiedEvent.InputTuple,
+      TransactionVerifiedEvent.OutputTuple,
+      TransactionVerifiedEvent.OutputObject
     >;
   };
 }

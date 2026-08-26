@@ -10,39 +10,245 @@ import type {
 
 const _abi = [
   {
+    anonymous: false,
     inputs: [
       {
-        internalType: "uint32",
+        indexed: true,
+        internalType: "uint64",
         name: "chainKey",
-        type: "uint32",
+        type: "uint64",
+      },
+      {
+        indexed: true,
+        internalType: "uint64",
+        name: "height",
+        type: "uint64",
+      },
+      {
+        indexed: false,
+        internalType: "uint64",
+        name: "transactionIndex",
+        type: "uint64",
+      },
+    ],
+    name: "TransactionVerified",
+    type: "event",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint64",
+        name: "chainKey",
+        type: "uint64",
+      },
+      {
+        internalType: "uint64[]",
+        name: "heights",
+        type: "uint64[]",
+      },
+      {
+        internalType: "bytes[]",
+        name: "encodedTransactions",
+        type: "bytes[]",
+      },
+      {
+        components: [
+          {
+            internalType: "bytes32",
+            name: "root",
+            type: "bytes32",
+          },
+          {
+            components: [
+              {
+                internalType: "bytes32",
+                name: "hash",
+                type: "bytes32",
+              },
+              {
+                internalType: "bool",
+                name: "isLeft",
+                type: "bool",
+              },
+            ],
+            internalType: "struct IAttestcoinBlockProver.MerkleProofEntry[]",
+            name: "siblings",
+            type: "tuple[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.MerkleProof[]",
+        name: "merkleProofs",
+        type: "tuple[]",
+      },
+      {
+        components: [
+          {
+            internalType: "bytes32",
+            name: "lowerEndpointDigest",
+            type: "bytes32",
+          },
+          {
+            internalType: "bytes32[]",
+            name: "roots",
+            type: "bytes32[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.ContinuityProof",
+        name: "sharedContinuityProof",
+        type: "tuple",
+      },
+    ],
+    name: "verify",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "verified",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint64",
+        name: "chainKey",
+        type: "uint64",
       },
       {
         internalType: "uint64",
-        name: "blockHeight",
+        name: "height",
         type: "uint64",
       },
       {
         internalType: "bytes",
-        name: "encodedTx",
+        name: "encodedTransaction",
         type: "bytes",
       },
       {
-        internalType: "bytes",
+        components: [
+          {
+            internalType: "bytes32",
+            name: "root",
+            type: "bytes32",
+          },
+          {
+            components: [
+              {
+                internalType: "bytes32",
+                name: "hash",
+                type: "bytes32",
+              },
+              {
+                internalType: "bool",
+                name: "isLeft",
+                type: "bool",
+              },
+            ],
+            internalType: "struct IAttestcoinBlockProver.MerkleProofEntry[]",
+            name: "siblings",
+            type: "tuple[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.MerkleProof",
         name: "merkleProof",
-        type: "bytes",
+        type: "tuple",
       },
       {
-        internalType: "bytes",
+        components: [
+          {
+            internalType: "bytes32",
+            name: "lowerEndpointDigest",
+            type: "bytes32",
+          },
+          {
+            internalType: "bytes32[]",
+            name: "roots",
+            type: "bytes32[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.ContinuityProof",
         name: "continuityProof",
-        type: "bytes",
-      },
-      {
-        internalType: "bool",
-        name: "emitEvent",
-        type: "bool",
+        type: "tuple",
       },
     ],
     name: "verify",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "verified",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint64",
+        name: "chainKey",
+        type: "uint64",
+      },
+      {
+        internalType: "uint64",
+        name: "height",
+        type: "uint64",
+      },
+      {
+        internalType: "bytes",
+        name: "encodedTransaction",
+        type: "bytes",
+      },
+      {
+        components: [
+          {
+            internalType: "bytes32",
+            name: "root",
+            type: "bytes32",
+          },
+          {
+            components: [
+              {
+                internalType: "bytes32",
+                name: "hash",
+                type: "bytes32",
+              },
+              {
+                internalType: "bool",
+                name: "isLeft",
+                type: "bool",
+              },
+            ],
+            internalType: "struct IAttestcoinBlockProver.MerkleProofEntry[]",
+            name: "siblings",
+            type: "tuple[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.MerkleProof",
+        name: "merkleProof",
+        type: "tuple",
+      },
+      {
+        components: [
+          {
+            internalType: "bytes32",
+            name: "lowerEndpointDigest",
+            type: "bytes32",
+          },
+          {
+            internalType: "bytes32[]",
+            name: "roots",
+            type: "bytes32[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.ContinuityProof",
+        name: "continuityProof",
+        type: "tuple",
+      },
+    ],
+    name: "verifyAndEmit",
     outputs: [
       {
         internalType: "bool",
@@ -56,37 +262,68 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint32",
+        internalType: "uint64",
         name: "chainKey",
-        type: "uint32",
+        type: "uint64",
       },
       {
         internalType: "uint64[]",
-        name: "blockHeights",
+        name: "heights",
         type: "uint64[]",
       },
       {
         internalType: "bytes[]",
-        name: "encodedTxs",
+        name: "encodedTransactions",
         type: "bytes[]",
       },
       {
-        internalType: "bytes[]",
+        components: [
+          {
+            internalType: "bytes32",
+            name: "root",
+            type: "bytes32",
+          },
+          {
+            components: [
+              {
+                internalType: "bytes32",
+                name: "hash",
+                type: "bytes32",
+              },
+              {
+                internalType: "bool",
+                name: "isLeft",
+                type: "bool",
+              },
+            ],
+            internalType: "struct IAttestcoinBlockProver.MerkleProofEntry[]",
+            name: "siblings",
+            type: "tuple[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.MerkleProof[]",
         name: "merkleProofs",
-        type: "bytes[]",
+        type: "tuple[]",
       },
       {
-        internalType: "bytes",
-        name: "continuityProof",
-        type: "bytes",
-      },
-      {
-        internalType: "bool",
-        name: "emitEvent",
-        type: "bool",
+        components: [
+          {
+            internalType: "bytes32",
+            name: "lowerEndpointDigest",
+            type: "bytes32",
+          },
+          {
+            internalType: "bytes32[]",
+            name: "roots",
+            type: "bytes32[]",
+          },
+        ],
+        internalType: "struct IAttestcoinBlockProver.ContinuityProof",
+        name: "sharedContinuityProof",
+        type: "tuple",
       },
     ],
-    name: "verifyBatch",
+    name: "verifyAndEmit",
     outputs: [
       {
         internalType: "bool",

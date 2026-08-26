@@ -51,7 +51,7 @@ export default function Footer() {
             <p className="text-sm text-white/40">
               © {new Date().getFullYear()} RemitCredit. All rights reserved.
             </p>
-            <p className="text-sm text-white/40">
+            <p className="text-sm text-white/40 hidden md:block ">
               Verified remittances. Real credit.
             </p>
           </div>
@@ -63,7 +63,7 @@ export default function Footer() {
             className="
               text-center
               font-[family-name:var(--font-serif)]
-              text-[clamp(2.2rem,18vw,16rem)]
+              text-[clamp(1.4rem,18vw,10rem)]
               font-normal
               leading-none
               tracking-[-0.04em]
