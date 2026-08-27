@@ -115,11 +115,11 @@ export default function RemittancesPage() {
                     <tr key={t.sourceTxHash}>
                       <td className="py-3.5 pr-4 font-medium text-fg">${formatAmount(t.amount)}</td>
                       <td className="py-3.5 pr-4 font-mono text-xs text-fg-secondary">{shortAddress(t.sender, 5)}</td>
-                      <td className="py-3.5 pr-4 text-fg-muted">{t.timestamp ? relativeTime(t.timestamp) : "—"}</td>
+                      <td className="py-3.5 pr-4 text-fg-muted">{t.sourceTimestamp ? relativeTime(t.sourceTimestamp) : "—"}</td>
                       <td className="py-3.5">
-                        <a href={`https://etherscan.io/tx/${t.sourceTxHash}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-fg-secondary transition hover:text-fg">
-                          {shortAddress(t.sourceTxHash, 4)} <ExternalLink className="h-3 w-3" />
-                        </a>
+                        
+                          {shortAddress(t.sourceTxHash, 4)}
+                     
                       </td>
                     </tr>
                   ))}

@@ -83,7 +83,7 @@ export type VerifiedTransfer = {
   sourceTxHash: string;
   amount: string;
   sender: string;
-  timestamp: number;
+  sourceTimestamp: number;
   blockNumber?: number;
 };
 

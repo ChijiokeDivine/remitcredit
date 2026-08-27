@@ -1,4 +1,5 @@
 import { ContractCallError } from "../../shared/services/contractClient";
+import { SenderNotApprovedError, AttestationPendingError } from "../../shared/errors";
 
 export class ApiError extends Error {
   constructor(
@@ -33,6 +34,34 @@ const CONTRACT_ERROR_STATUS: Record<string, number> = {
 };
 
 export function toErrorResponse(err: unknown): Response {
+  if (err instanceof SenderNotApprovedError) {
+    return json(
+      {
+        error: "SenderNotApproved",
+        message: err.message,
+        borrower: err.borrower,
+        sender: err.sender,
+        declaredSenders: err.declaredSenders,
+      },
+      403
+    );
+  }
+
+  if (err instanceof AttestationPendingError) {
+    return json(
+      {
+        error: "AttestationPending",
+        message: err.message,
+        chainKey: err.chainKey,
+        targetHeight: err.targetHeight,
+        latestAttestedHeight: err.latestAttestedHeight,
+        retryAfterSeconds: err.retryAfterSeconds,
+      },
+      { status: 425, headers: { "Retry-After": String(err.retryAfterSeconds) } } as any
+      // if your `json()` helper doesn't support extra headers, drop the
+      // Retry-After line and just return 425 with the body above
+    );
+  }
   if (err instanceof ApiError) {
     return json({ error: err.message, details: err.details }, err.statusCode);
   }

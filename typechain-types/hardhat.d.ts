@@ -89,6 +89,10 @@ declare module "hardhat/types/runtime" {
       name: "RemittanceMicroLoan",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.RemittanceMicroLoan__factory>;
+    getContractFactory(
+      name: "VerifyRelay",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.VerifyRelay__factory>;
 
     getContractAt(
       name: "Ownable",
@@ -185,6 +189,11 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.RemittanceMicroLoan>;
+    getContractAt(
+      name: "VerifyRelay",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.VerifyRelay>;
 
     deployContract(
       name: "Ownable",
@@ -262,6 +271,10 @@ declare module "hardhat/types/runtime" {
       name: "RemittanceMicroLoan",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.RemittanceMicroLoan>;
+    deployContract(
+      name: "VerifyRelay",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.VerifyRelay>;
 
     deployContract(
       name: "Ownable",
@@ -358,6 +371,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.RemittanceMicroLoan>;
+    deployContract(
+      name: "VerifyRelay",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.VerifyRelay>;
 
     // default types
     getContractFactory(

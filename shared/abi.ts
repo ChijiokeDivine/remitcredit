@@ -16,8 +16,8 @@ export const REMITTANCE_MICRO_LOAN_ABI = [
   "function registerBorrower(address borrower, address declaredSender) external",
   "function addDeclaredSender(address borrower, address sender) external",
   "function removeDeclaredSender(address borrower, address sender) external",
-  "function submitRemittanceProof(address borrower, uint32 chainKey, uint64 blockHeight, bytes encodedTx, bytes merkleProof, bytes continuityProof, address claimedSender, uint256 claimedAmount, uint64 claimedTimestamp, bytes32 sourceTxHash) external",
-  "function submitRemittanceProofBatch(address borrower, uint32 chainKey, uint64[] blockHeights, bytes[] encodedTxs, bytes[] merkleProofs, bytes continuityProof, address[] claimedSenders, uint256[] claimedAmounts, uint64[] claimedTimestamps, bytes32[] sourceTxHashes) external",
+  "function submitRemittanceProof(address borrower, uint64 chainKey, uint64 blockHeight, bytes encodedTx, bytes merkleProof, bytes continuityProof, address claimedSender, uint256 claimedAmount, uint64 claimedTimestamp, bytes32 sourceTxHash) external",
+  "function submitRemittanceProofBatch(address borrower, uint64 chainKey, uint64[] blockHeights, bytes[] encodedTxs, bytes[] merkleProofs, bytes continuityProof, address[] claimedSenders, uint256[] claimedAmounts, uint64[] claimedTimestamps, bytes32[] sourceTxHashes) external",
   "function requestCreditReview(address borrower) external",
   "function requestLoan(address borrower, uint256 amount) external",
   "function repay(address borrower, uint256 amount) external",
@@ -50,6 +50,7 @@ export const REMITTANCE_MICRO_LOAN_ABI = [
 ] as const;
 
 export const REMITTANCE_CREDIT_REGISTRY_ABI = [
+  "function recorder() external view returns (address)",
   "function getTransfers(address borrower) external view returns (tuple(address sender, uint256 amount, uint64 sourceTimestamp, bytes32 sourceTxHash, uint64 recordedAt)[])",
   "function getStats(address borrower, uint64 lookbackWindowSeconds) external view returns (tuple(uint256 transferCount, uint256 totalAmount, uint64 firstTimestamp, uint64 lastTimestamp, uint64 avgIntervalSeconds, uint16 intervalConsistencyBps))",
   "function isTransferRecorded(bytes32 sourceTxHash) external view returns (bool)",

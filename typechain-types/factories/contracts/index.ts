@@ -6,3 +6,4 @@ export * as mocks from "./mocks";
 export { CreditDecisionEngine__factory } from "./CreditDecisionEngine__factory";
 export { RemittanceCreditRegistry__factory } from "./RemittanceCreditRegistry__factory";
 export { RemittanceMicroLoan__factory } from "./RemittanceMicroLoan__factory";
+export { VerifyRelay__factory } from "./VerifyRelay__factory";

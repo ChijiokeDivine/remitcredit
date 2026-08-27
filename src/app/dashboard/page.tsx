@@ -171,7 +171,7 @@ export default function DashboardPage() {
                     <p className="text-sm font-medium text-fg">${formatAmount(t.amount)}</p>
                     <p className="text-xs text-fg-muted font-mono">from {shortAddress(t.sender)}</p>
                   </div>
-                  <p className="text-xs text-fg-muted">{t.timestamp ? relativeTime(t.timestamp) : "—"}</p>
+                  <p className="text-xs text-fg-muted">{t.sourceTimestamp ? relativeTime(t.sourceTimestamp) : "—"}</p>
                 </div>
               ))}
             </div>

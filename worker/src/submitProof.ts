@@ -4,6 +4,12 @@ import { RemitCreditConfig } from "../../shared/config";
 import { ProofService } from "../../shared/services/proofService";
 import { RemitCreditClient } from "../../shared/services/contractClient";
 import { decodeErc20Remittance } from "../../shared/services/txDecoder";
+import { SenderNotApprovedError } from "../../shared/errors";
+import {
+  encodeTxBytesForContract,
+  encodeMerkleProofForContract,
+  encodeContinuityProofForContract,
+} from "../../shared/services/proofEncoding";
 
 export interface SubmitProofResult {
   sourceTxHash: string; // the real source-chain tx hash (for display/lookup)
@@ -31,7 +37,7 @@ export async function submitRemittanceProofForTx(
   sourceTxHash: string
 ): Promise<SubmitProofResult> {
   const sourceProvider = new JsonRpcProvider(config.sourceChain.rpcUrl);
-  const proofService = new ProofService(config);
+  const proofService = new ProofService(config, config.worker.privateKey);
 
   const decoded = await decodeErc20Remittance(sourceProvider, sourceTxHash);
 
@@ -43,9 +49,7 @@ export async function submitRemittanceProofForTx(
     (s) => s.toLowerCase() === decoded.sender.toLowerCase()
   );
   if (!isApprovedSender) {
-    throw new Error(
-      `Transaction sender ${decoded.sender} is not among ${borrower}'s declared remittance senders (${borrowerRecord.declaredSenders.join(", ")})`
-    );
+    throw new SenderNotApprovedError(borrower, decoded.sender, borrowerRecord.declaredSenders);
   }
 
   const proof = await proofService.buildProofForTransaction(sourceTxHash);
@@ -57,6 +61,31 @@ export async function submitRemittanceProofForTx(
   if (alreadyRecorded) {
     throw new AlreadyRecordedError(proof.realTxHash);
   }
+
+  // ── DEBUG: staticCall submitRemittanceProof itself, not just the
+  // precompile. staticCall goes through eth_call, not eth_estimateGas —
+  // on this RPC, eth_estimateGas has been swallowing revert data on every
+  // failure so far ("data: 0x", no decodable reason). eth_call should
+  // surface the actual custom error (ProofNotVerified, TxHashMismatch,
+  // etc.) that's been hiding behind that empty response the whole time.
+  try {
+    await client.loan.submitRemittanceProof.staticCall(
+      borrower,
+      proof.chainKey,
+      proof.blockHeight,
+      encodeTxBytesForContract(proof.txBytes),
+      encodeMerkleProofForContract(proof.merkleProof),
+      encodeContinuityProofForContract(proof.continuityProof),
+      decoded.sender,
+      decoded.amount,
+      decoded.sourceTimestamp,
+      proof.sourceTxHash
+    );
+    console.log("[debug] staticCall submitRemittanceProof succeeded (no revert)");
+  } catch (err) {
+    console.log("[debug] staticCall submitRemittanceProof reverted:", err);
+  }
+  // ── END DEBUG
 
   const tx = await client.submitRemittanceProof(
     borrower,
