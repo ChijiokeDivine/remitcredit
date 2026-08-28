@@ -7,7 +7,7 @@ export default function CompanyPage() {
   return (
     <main className="min-h-dvh bg-bg">
       <header className="fixed inset-x-0 top-5 z-[100] flex justify-center px-4 md:top-6">
-        <nav className="flex items-center gap-1.5 rounded-md bg-bg-elevated/80 p-1.5 shadow-[var(--card-shadow)] ring-1 ring-border backdrop-blur-md">
+        <nav className="flex items-center gap-1.5 rounded-md border border-border bg-bg-elevated/90 p-1.5 backdrop-blur-md">
           <Link href="/" className="rounded-md bg-fg px-4 py-2 text-sm font-medium text-bg transition hover:opacity-90 md:px-5 md:py-2.5">
             <span className="font-[family-name:var(--font-serif)] italic">RemitCredit</span>
           </Link>

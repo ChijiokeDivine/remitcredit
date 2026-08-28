@@ -5,6 +5,7 @@ import { AppShell } from "../../components/layout/AppShell";
 import { Card, CardTitle, CardDescription } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
+import { InfoTip } from "../../components/ui/Tooltip";
 import { useWallet } from "../../lib/wallet";
 import { getCredit, getLoan, getCreditPreview, getRemittances, getBorrower, type CreditDecision, type LoanStatus, type CreditPreview, type VerifiedTransfer } from "../../lib/api";
 import { formatAmount, formatRisk, shortAddress, relativeTime } from "../../lib/utils";
@@ -38,7 +39,7 @@ export default function DashboardPage() {
       if (results[3].status === "fulfilled") setPreview(results[3].value);
       if (results[4].status === "fulfilled") setTransfers(results[4].value.transfers ?? []);
     } catch {
-      setError("Could not load data. Is the backend running?");
+      setError("Couldn't load data. Is the backend running?");
     } finally {
       setLoading(false);
     }
@@ -53,7 +54,7 @@ export default function DashboardPage() {
           <Card>
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-bg-muted"><Wallet className="h-5 w-5 text-fg" /></div>
             <CardTitle>Connect to continue</CardTitle>
-            <CardDescription>Connect your wallet to see your credit line and activity.</CardDescription>
+            <CardDescription>See your credit line and activity.</CardDescription>
             <Button className="mt-6 w-full" onClick={connect} loading={isConnecting}>Connect wallet</Button>
           </Card>
         </div>
@@ -67,10 +68,10 @@ export default function DashboardPage() {
         <div className="mx-auto max-w-md text-center animate-fade-up">
           <Card>
             <CardTitle>Complete onboarding</CardTitle>
-            <CardDescription>Declare at least one remittance sender to start building credit.</CardDescription>
+            <CardDescription>Declare a sender to start building credit.</CardDescription>
             <div className="mt-6 flex flex-col gap-2">
               <Link href="/onboarding"><Button className="w-full">Set up now <ArrowRight className="h-4 w-4" /></Button></Link>
-              <Button variant="ghost" size="sm" onClick={load} loading={loading}>Refresh on-chain status</Button>
+              <Button variant="ghost" size="sm" onClick={load} loading={loading}>Refresh status</Button>
             </div>
           </Card>
         </div>
@@ -83,8 +84,8 @@ export default function DashboardPage() {
       <AppShell>
         <div className="mx-auto max-w-md text-center animate-fade-up">
           <Card>
-            <CardTitle>Checking on-chain status…</CardTitle>
-            <CardDescription>One moment while we confirm your registration.</CardDescription>
+            <CardTitle>Checking status…</CardTitle>
+            <CardDescription>Confirming your registration on-chain.</CardDescription>
             <Button className="mt-6 w-full" variant="outline" onClick={load} loading={loading}>Refresh</Button>
           </Card>
         </div>
@@ -96,55 +97,76 @@ export default function DashboardPage() {
   const outstanding = loan?.outstandingPrincipal ?? "0";
   const available = loan?.availableCredit ?? "0";
   const eligible = credit?.eligible ?? false;
+  const utilizationPct = Number(limit) > 0 ? Math.min(100, Math.round((Number(outstanding) / Number(limit)) * 100)) : 0;
 
   return (
     <AppShell>
       <div className="animate-fade-up">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="font-[family-name:var(--font-serif)] text-3xl font-normal tracking-tight text-fg md:text-4xl">Dashboard</h1>
-            <p className="mt-1 text-sm text-fg-muted font-mono">{shortAddress(address, 6)}</p>
+            <p className="mt-1 font-mono text-sm text-fg-muted">{shortAddress(address, 6)}</p>
           </div>
           <Button variant="outline" size="sm" onClick={load} loading={loading}><RefreshCw className="h-3.5 w-3.5" /> Refresh</Button>
         </div>
+
         {error && (
-          <div className="mb-6 flex items-center gap-2 rounded-[16px] bg-bg-muted px-4 py-3 text-sm text-fg">
+          <div className="mb-6 flex items-center gap-2 rounded-xl border border-border bg-bg-muted px-4 py-3 text-sm text-fg">
             <AlertCircle className="h-4 w-4 shrink-0" />{error}
           </div>
         )}
+
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="!p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Credit limit</p>
+            <div className="flex items-center gap-1">
+              <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Credit limit</p>
+              <InfoTip label="Max you can draw, based on your verified remittance history." />
+            </div>
             <p className="mt-2 font-[family-name:var(--font-serif)] text-3xl text-fg">${formatAmount(limit)}</p>
             <div className="mt-2"><Badge tone={eligible ? "success" : "muted"}>{eligible ? "Eligible" : "Not yet eligible"}</Badge></div>
           </Card>
           <Card className="!p-5">
             <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Available</p>
             <p className="mt-2 font-[family-name:var(--font-serif)] text-3xl text-fg">${formatAmount(available)}</p>
-            <p className="mt-2 text-sm text-fg-secondary">Outstanding ${formatAmount(outstanding)}</p>
+            <p className="mt-2 text-sm text-fg-secondary">${formatAmount(outstanding)} outstanding</p>
           </Card>
           <Card className="!p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Risk score</p>
+            <div className="flex items-center gap-1">
+              <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Risk score</p>
+              <InfoTip label="Lower is better. Calculated from verified transfer patterns." />
+            </div>
             <p className="mt-2 font-[family-name:var(--font-serif)] text-3xl text-fg">{credit ? formatRisk(credit.riskScoreBps) : "—"}</p>
-            <p className="mt-2 text-sm text-fg-secondary">Lower is better</p>
           </Card>
           <Card className="!p-5">
             <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Verified transfers</p>
             <p className="mt-2 font-[family-name:var(--font-serif)] text-3xl text-fg">{transfers.length || preview?.stats?.transferCount || 0}</p>
-            <p className="mt-2 text-sm text-fg-secondary">Total ${formatAmount(preview?.stats?.totalAmount ?? "0")}</p>
+            <p className="mt-2 text-sm text-fg-secondary">${formatAmount(preview?.stats?.totalAmount ?? "0")} total</p>
           </Card>
         </div>
-        <div className="mt-6 grid gap-4 lg:grid-cols-5">
+
+        {Number(limit) > 0 && (
+          <Card className="mt-4 !p-5">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-fg">Credit used</p>
+              <p className="text-sm text-fg-secondary">${formatAmount(outstanding)} <span className="text-fg-muted">/ ${formatAmount(limit)}</span></p>
+            </div>
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-bg-muted">
+              <div className="h-full rounded-full bg-fg transition-all duration-700 ease-out" style={{ width: `${utilizationPct}%` }} />
+            </div>
+          </Card>
+        )}
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-5">
           <Card className="lg:col-span-3">
             <div className="flex items-start gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bg-muted"><TrendingUp className="h-4 w-4 text-fg" /></div>
               <div>
                 <CardTitle className="!text-base">Why this limit</CardTitle>
                 <p className="mt-2 text-[15px] leading-relaxed text-fg-secondary">
-                  {preview?.rationale || "Credit review will run once verified remittances are recorded. Connect more history or wait for the next transfer."}
+                  {preview?.rationale || "Runs once verified remittances are recorded."}
                 </p>
                 <Link href="/credit" className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-fg transition hover:opacity-70">
-                  See full breakdown <ArrowRight className="h-3.5 w-3.5" />
+                  Full breakdown <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </div>
@@ -158,18 +180,19 @@ export default function DashboardPage() {
             </div>
           </Card>
         </div>
+
         {transfers.length > 0 && (
-          <Card className="mt-6">
+          <Card className="mt-4">
             <div className="mb-4 flex items-center justify-between">
               <CardTitle className="!text-base">Recent remittances</CardTitle>
               <Link href="/remittances" className="text-sm font-medium text-fg-secondary transition hover:text-fg">View all</Link>
             </div>
             <div className="divide-y divide-border">
               {transfers.slice(0, 5).map((t) => (
-                <div key={t.sourceTxHash} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                <div key={t.sourceTxHash} className="flex items-center justify-between py-3 transition-colors first:pt-0 last:pb-0 hover:bg-bg-muted/40">
                   <div>
                     <p className="text-sm font-medium text-fg">${formatAmount(t.amount)}</p>
-                    <p className="text-xs text-fg-muted font-mono">from {shortAddress(t.sender)}</p>
+                    <p className="font-mono text-xs text-fg-muted">from {shortAddress(t.sender)}</p>
                   </div>
                   <p className="text-xs text-fg-muted">{t.sourceTimestamp ? relativeTime(t.sourceTimestamp) : "—"}</p>
                 </div>

@@ -53,14 +53,14 @@ export default function OnboardingPage() {
   return (
     <AppShell>
       <div className="mx-auto max-w-lg animate-fade-up">
-        <div className="mb-8 text-center">
+        <div className="mb-7 text-center">
           <h1 className="font-[family-name:var(--font-serif)] text-3xl font-normal tracking-tight text-fg md:text-4xl">Set up your credit</h1>
-          <p className="mt-3 text-[15px] text-fg-secondary">Declare the wallets that send you support. One or many. You can change them later.</p>
+          <p className="mt-3 text-[15px] text-fg-secondary">Declare the wallets that send you support. Change them anytime.</p>
         </div>
         {!address ? (
           <Card className="text-center">
             <CardTitle>Connect your wallet</CardTitle>
-            <CardDescription>Your wallet is your identity. No email or password required.</CardDescription>
+            <CardDescription>Your wallet is your identity. No email or password.</CardDescription>
             <Button className="mt-6 w-full" onClick={connect} loading={isConnecting}>Connect wallet</Button>
           </Card>
         ) : success ? (
@@ -84,7 +84,7 @@ export default function OnboardingPage() {
                   <div key={i} className="flex gap-2">
                     <Input placeholder="0x…" value={s} onChange={(e) => updateSender(i, e.target.value)} className="font-mono text-sm" />
                     {senders.length > 1 && (
-                      <button type="button" onClick={() => removeSender(i)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border-strong text-fg-muted transition hover:bg-bg-muted hover:text-fg active:scale-95" aria-label="Remove sender">
+                      <button type="button" onClick={() => removeSender(i)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border text-fg-muted transition hover:bg-bg-muted hover:text-fg active:scale-95" aria-label="Remove sender">
                         <X className="h-4 w-4" />
                       </button>
                     )}

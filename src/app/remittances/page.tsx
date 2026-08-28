@@ -7,7 +7,7 @@ import { Button } from "../../components/ui/Button";
 import { useWallet } from "../../lib/wallet";
 import { getRemittances, getRemittanceStats, verifyRemittance, type VerifiedTransfer, ApiError } from "../../lib/api";
 import { formatAmount, shortAddress, relativeTime } from "../../lib/utils";
-import { ExternalLink, ShieldCheck, Search } from "lucide-react";
+import { ShieldCheck, Search } from "lucide-react";
 
 export default function RemittancesPage() {
   const { address } = useWallet();
@@ -49,7 +49,7 @@ export default function RemittancesPage() {
     return (
       <AppShell>
         <div className="mx-auto max-w-md text-center">
-          <Card><CardTitle>Connect your wallet</CardTitle><CardDescription>View verified remittance history after connecting.</CardDescription></Card>
+          <Card><CardTitle>Connect your wallet</CardTitle><CardDescription>View verified remittance history.</CardDescription></Card>
         </div>
       </AppShell>
     );
@@ -58,11 +58,12 @@ export default function RemittancesPage() {
   return (
     <AppShell>
       <div className="animate-fade-up">
-        <div className="mb-8">
+        <div className="mb-7">
           <h1 className="font-[family-name:var(--font-serif)] text-3xl font-normal tracking-tight text-fg md:text-4xl">Remittance history</h1>
-          <p className="mt-2 text-[15px] text-fg-secondary">Every transfer cryptographically proven on Creditcoin.</p>
+          <p className="mt-2 text-[15px] text-fg-secondary">Every transfer proven on Creditcoin.</p>
         </div>
-        <div className="mb-6 grid gap-4 sm:grid-cols-3">
+
+        <div className="mb-4 grid gap-4 sm:grid-cols-3">
           <Card className="!p-5">
             <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Transfers</p>
             <p className="mt-2 font-[family-name:var(--font-serif)] text-2xl text-fg">{stats?.transferCount ?? transfers.length}</p>
@@ -76,28 +77,30 @@ export default function RemittancesPage() {
             <p className="mt-2 font-[family-name:var(--font-serif)] text-2xl text-fg">{stats?.consistencyBps != null ? `${(stats.consistencyBps / 100).toFixed(0)}%` : "—"}</p>
           </Card>
         </div>
-        <Card className="mb-6">
+
+        <Card className="mb-4">
           <div className="flex items-start gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bg-muted"><ShieldCheck className="h-4 w-4 text-fg" /></div>
             <div className="flex-1">
               <CardTitle className="!text-base">Verify a transfer</CardTitle>
-              <CardDescription>Paste a source-chain tx hash if you just received a remittance and don&apos;t want to wait for automatic detection.</CardDescription>
+              <CardDescription>Paste a source-chain tx hash to verify manually.</CardDescription>
               <form onSubmit={handleVerify} className="mt-4 flex flex-col gap-3 sm:flex-row">
-                <Input placeholder="0x… (32-byte tx hash)" value={txHash} onChange={(e) => setTxHash(e.target.value)} className="font-mono text-sm" />
+                <Input placeholder="0x… tx hash" value={txHash} onChange={(e) => setTxHash(e.target.value)} className="font-mono text-sm" />
                 <Button type="submit" loading={verifying} className="shrink-0">Verify now</Button>
               </form>
               {msg && <p className="mt-3 text-sm text-fg-secondary">{msg}</p>}
             </div>
           </div>
         </Card>
+
         <Card>
           <CardTitle className="!text-base mb-4">Verified transfers</CardTitle>
           {loading ? (
-            <div className="space-y-3">{[1,2,3].map((i) => <div key={i} className="skeleton h-14 w-full" />)}</div>
+            <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="skeleton h-14 w-full" />)}</div>
           ) : transfers.length === 0 ? (
             <div className="flex flex-col items-center py-12 text-center">
               <Search className="mb-3 h-8 w-8 text-fg-muted" strokeWidth={1.5} />
-              <p className="text-sm text-fg-secondary">No verified transfers yet. Once a declared sender transfers to your wallet, it will appear here after proof.</p>
+              <p className="text-sm text-fg-secondary">No verified transfers yet.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -112,15 +115,11 @@ export default function RemittancesPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {transfers.map((t) => (
-                    <tr key={t.sourceTxHash}>
+                    <tr key={t.sourceTxHash} className="transition-colors hover:bg-bg-muted/40">
                       <td className="py-3.5 pr-4 font-medium text-fg">${formatAmount(t.amount)}</td>
                       <td className="py-3.5 pr-4 font-mono text-xs text-fg-secondary">{shortAddress(t.sender, 5)}</td>
                       <td className="py-3.5 pr-4 text-fg-muted">{t.sourceTimestamp ? relativeTime(t.sourceTimestamp) : "—"}</td>
-                      <td className="py-3.5">
-                        
-                          {shortAddress(t.sourceTxHash, 4)}
-                     
-                      </td>
+                      <td className="py-3.5 font-mono text-xs text-fg-secondary">{shortAddress(t.sourceTxHash, 4)}</td>
                     </tr>
                   ))}
                 </tbody>

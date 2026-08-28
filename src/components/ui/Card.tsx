@@ -1,9 +1,20 @@
 import { cn } from "@/lib/utils";
 import type { HTMLAttributes } from "react";
 
-export function Card({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
+interface CardProps extends HTMLAttributes<HTMLDivElement> {
+  interactive?: boolean;
+}
+
+export function Card({ className, children, interactive, ...props }: CardProps) {
   return (
-    <div className={cn("rounded-[var(--radius-card)] bg-bg-elevated p-6 shadow-[var(--card-shadow)] md:p-8", className)} {...props}>
+    <div
+      className={cn(
+        "rounded-xl border border-border bg-bg-elevated p-6 transition-colors duration-150 md:p-7",
+        interactive && "cursor-pointer hover:border-border-strong",
+        className
+      )}
+      {...props}
+    >
       {children}
     </div>
   );
@@ -12,5 +23,5 @@ export function CardTitle({ className, children, ...props }: HTMLAttributes<HTML
   return <h3 className={cn("text-lg font-semibold text-fg md:text-xl", className)} {...props}>{children}</h3>;
 }
 export function CardDescription({ className, children, ...props }: HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn("mt-1.5 text-[15px] leading-relaxed text-fg-secondary", className)} {...props}>{children}</p>;
+  return <p className={cn("mt-1 text-sm leading-relaxed text-fg-secondary", className)} {...props}>{children}</p>;
 }
