@@ -39,7 +39,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
         href={href}
         onClick={onNavigate}
         className={cn(
-          "group relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150",
+          "group relative flex items-center gap-2.5 rounded-lg px-3 py-2 my-2 text-sm font-medium transition-colors duration-150",
           // Active item: a subtle accent tint, not a heavy filled pill.
           active ? "bg-accent/10 text-accent" : "text-fg-secondary hover:bg-bg-muted hover:text-fg"
         )}
