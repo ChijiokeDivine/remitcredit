@@ -1,3 +1,4 @@
+// src/components/layout/AppNav.tsx
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -38,13 +39,14 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
         href={href}
         onClick={onNavigate}
         className={cn(
-          "group relative flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150",
-          active ? "bg-bg-muted text-fg" : "text-fg-secondary hover:bg-bg-muted hover:text-fg"
+          "group relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150",
+          // Active item: a subtle accent tint, not a heavy filled pill.
+          active ? "bg-accent/10 text-accent" : "text-fg-secondary hover:bg-bg-muted hover:text-fg"
         )}
       >
         <span
           className={cn(
-            "absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-fg transition-transform duration-150",
+            "absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-accent transition-transform duration-150",
             active ? "scale-y-100" : "scale-y-0"
           )}
         />

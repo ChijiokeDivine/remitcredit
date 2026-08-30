@@ -1,3 +1,4 @@
+// src/app/api/activity/route.ts
 import { activityStore } from "../../../server/store";
 import { json, toErrorResponse } from "../../../server/api-error";
 
@@ -10,7 +11,7 @@ export async function GET(req: Request) {
     const limit = searchParams.get("limit")
       ? Number(searchParams.get("limit"))
       : undefined;
-    return json({ events: activityStore.listAll(limit) });
+    return json({ events: await activityStore.listAll(limit) });
   } catch (err) {
     return toErrorResponse(err);
   }

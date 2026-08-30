@@ -1,3 +1,4 @@
+// src/components/ui/Input.tsx
 "use client";
 import { forwardRef, type InputHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
@@ -18,14 +19,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={cn(
-            "h-11 w-full rounded-md border border-border bg-bg-elevated px-3.5 text-[15px] text-fg",
+            "h-11 w-full rounded-lg border border-border bg-bg-elevated px-3.5 text-[15px] text-fg",
             "placeholder:text-fg-muted transition-colors duration-150",
-            "hover:border-border-strong focus:border-fg focus:outline-none",
-            error && "border-fg", className
+            "hover:border-border-strong focus:border-accent focus:outline-none",
+            error && "border-danger-fg", className
           )}
           {...props}
         />
-        {error && <p className="mt-1.5 text-sm text-fg">{error}</p>}
+        {error && <p className="mt-1.5 text-sm text-danger-fg">{error}</p>}
         {hint && !error && <p className="mt-1.5 text-sm text-fg-muted">{hint}</p>}
       </div>
     );

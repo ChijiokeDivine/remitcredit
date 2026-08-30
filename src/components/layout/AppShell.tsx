@@ -1,3 +1,4 @@
+// src/components/layout/AppShell.tsx
 "use client";
 import type { ReactNode } from "react";
 import { useWallet } from "@/lib/wallet";

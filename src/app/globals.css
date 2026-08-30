@@ -1,4 +1,171 @@
 /* src/app/globals.css */
 @import "tailwindcss";
 
+/*
+  RemitCredit — authenticated app design tokens ("product register").
+  Restrained, near-monochrome surfaces with a single confident accent used
+  sparingly (focus, eligibility, links) — colour carries meaning, it never
+  decorates. Warm paper background + ink text, functional status colours
+  only where a pill/badge needs one. Mirrors the token approach documented
+  in the design references: named surfaces, a text hierarchy of three
+  weights, and one accent rather than a rainbow of brand colour.
+*/
+
+:root {
+  /* Surfaces */
+  --bg: #faf9f6;              /* page background — warm paper, not stark white */
+  --bg-elevated: #ffffff;     /* cards, inputs, popovers */
+  --bg-muted: #f1efea;        /* subtle fills — pills, hovered rows, track bars */
+
+  /* Text */
+  --fg: #17140f;              /* primary ink */
+  --fg-secondary: #6b665c;    /* secondary copy, helper text */
+  --fg-muted: #9a9488;        /* labels, placeholders, timestamps */
+
+  /* Structure */
+  --border: #e9e5db;
+  --border-strong: #d7d0c3;
+
+  /* Accent — links, focus rings, active nav, eligibility/active states */
+  --accent: #4c3fd6;
+  --accent-fg: #ffffff;
+
+  /* Semantic status, kept low-saturation so pills stay quiet */
+  --warning-bg: #fbecc7;
+  --warning-fg: #7a5b12;
+  --danger-bg: #f8dede;
+  --danger-fg: #99312c;
+
+  --card-shadow: 0 1px 2px rgba(23, 20, 15, 0.06), 0 1px 1px rgba(23, 20, 15, 0.03);
+}
+
+.dark {
+  --bg: #121110;
+  --bg-elevated: #1a1917;
+  --bg-muted: #211f1b;
+
+  --fg: #f4f2ec;
+  --fg-secondary: #b3ada1;
+  --fg-muted: #7d786d;
+
+  --border: #2c2a25;
+  --border-strong: #3c3933;
+
+  --accent: #a196ff;
+  --accent-fg: #16140f;
+
+  --warning-bg: #3a301a;
+  --warning-fg: #f0cf7a;
+  --danger-bg: #3a2222;
+  --danger-fg: #f2a89f;
+
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+/* Map raw tokens into Tailwind v4's theme so bg-bg, text-fg, etc. generate */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-muted: var(--bg-muted);
+
+  --color-fg: var(--fg);
+  --color-fg-secondary: var(--fg-secondary);
+  --color-fg-muted: var(--fg-muted);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-fg: var(--warning-fg);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-fg: var(--danger-fg);
+}
+
+@layer base {
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+  }
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+  /* Visible keyboard focus everywhere, not just on elements that opt in */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* Numeric columns — amounts, dates, ids — always tabular so figures align */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Motion                                                                    */
+/* ------------------------------------------------------------------------ */
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Tactile press feedback — every button should feel physically pressed */
+@keyframes press {
+  0% { transform: scale(1); }
+  45% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+.animate-press {
+  animation: press 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pulse-ring {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 35%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+.animate-pulse-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Mirror loading — skeletons that mirror the shape of the real content,    */
+/* rendered immediately in place of data instead of a spinner or blocking   */
+/* page-level loading state.                                                */
+/* ------------------------------------------------------------------------ */
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  border-radius: 0.5rem;
+  background-color: var(--bg-muted);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--fg) 6%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-press,
+  .animate-pulse-ring,
+  .skeleton {
+    animation: none !important;
+  }
+}
+
 /* You can add your custom global project styles underneath if needed */

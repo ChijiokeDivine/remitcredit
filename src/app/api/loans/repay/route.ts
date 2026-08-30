@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const receipt = await tx.wait();
     const updated = await client.getBorrower(borrower);
 
-    activityStore.append({
+    await activityStore.append({
       borrower,
       type: "loan_repaid",
       data: {

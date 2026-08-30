@@ -1,3 +1,4 @@
+// src/app/api/remittances/verify/route.ts
 import { z } from "zod";
 import { isAddress, isHexString } from "ethers";
 import { getConfig } from "../../../../server/config";
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
       sourceTxHash
     );
 
-    activityStore.append({
+    await activityStore.append({
       borrower,
       type: "remittance_verified",
       data: {

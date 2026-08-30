@@ -1,3 +1,4 @@
+// src/app/api/credit/[borrower]/review/route.ts
 import { isAddress } from "ethers";
 import { requireRelayerClient } from "../../../../../server/contracts";
 import { activityStore } from "../../../../../server/store";
@@ -20,7 +21,7 @@ export async function POST(
     const receipt = await tx.wait();
     const record = await client.getBorrower(borrower);
 
-    activityStore.append({
+    await activityStore.append({
       borrower,
       type: "credit_reviewed",
       data: {

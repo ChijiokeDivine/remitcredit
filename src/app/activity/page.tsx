@@ -1,9 +1,11 @@
+// src/app/activity/page.tsx
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "../../components/layout/AppShell";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
+import { SkeletonList } from "../../components/ui/Skeleton";
 import { useWallet } from "../../lib/wallet";
 import { getActivity, getBorrowerActivity, type ActivityEvent } from "../../lib/api";
 import { shortAddress, relativeTime, formatAmount, cn } from "../../lib/utils";
@@ -37,14 +39,14 @@ function EventRow({ event }: { event: ActivityEvent }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={meta.tone}>{meta.label}</Badge>
-          {detail && <span className="text-sm font-medium text-fg">{detail}</span>}
+          {detail && <span className="text-sm font-medium tabular-nums text-fg">{detail}</span>}
         </div>
         <p className="mt-1 font-mono text-xs text-fg-muted">
           {shortAddress(event.borrower, 5)}
           {data.txHash ? ` · ${shortAddress(String(data.txHash), 4)}` : ""}
         </p>
       </div>
-      <p className="shrink-0 text-xs text-fg-muted">{event.timestamp ? relativeTime(event.timestamp) : ""}</p>
+      <p className="shrink-0 text-xs tabular-nums text-fg-muted">{event.timestamp ? relativeTime(event.timestamp) : ""}</p>
     </div>
   );
 }
@@ -83,22 +85,22 @@ export default function ActivityPage() {
             <p className="mt-2 text-[15px] text-fg-secondary">Live feed: detect → verify → decide → execute.</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative flex rounded-md border border-border p-0.5">
+            <div className="relative flex rounded-lg border border-border p-0.5">
               <span
                 className={cn(
-                  "absolute inset-y-0.5 w-[calc(50%-2px)] rounded bg-fg transition-transform duration-200 ease-out",
+                  "absolute inset-y-0.5 w-[calc(50%-2px)] rounded-md bg-accent transition-transform duration-200 ease-out",
                   scope === "mine" ? "translate-x-[calc(100%+4px)]" : "translate-x-0"
                 )}
               />
-              <button type="button" onClick={() => setScope("all")} className={cn("relative z-10 rounded px-3 py-1.5 text-xs font-medium transition-colors", scope === "all" ? "text-bg" : "text-fg-secondary hover:text-fg")}>All</button>
-              <button type="button" onClick={() => setScope("mine")} disabled={!address} className={cn("relative z-10 rounded px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-40", scope === "mine" ? "text-bg" : "text-fg-secondary hover:text-fg")}>Mine</button>
+              <button type="button" onClick={() => setScope("all")} className={cn("relative z-10 rounded-md px-3 py-1.5 text-xs font-medium transition-colors", scope === "all" ? "text-accent-fg" : "text-fg-secondary hover:text-fg")}>All</button>
+              <button type="button" onClick={() => setScope("mine")} disabled={!address} className={cn("relative z-10 rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-40", scope === "mine" ? "text-accent-fg" : "text-fg-secondary hover:text-fg")}>Mine</button>
             </div>
             <Button variant="outline" size="sm" onClick={load} loading={loading}><RefreshCw className="h-3.5 w-3.5" /></Button>
           </div>
         </div>
         <Card>
           {loading && events.length === 0 ? (
-            <div className="space-y-4">{[1, 2, 3, 4].map((i) => <div key={i} className="skeleton h-12 w-full" />)}</div>
+            <SkeletonList rows={4} />
           ) : events.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-center">
               <Activity className="mb-3 h-8 w-8 text-fg-muted" strokeWidth={1.5} />

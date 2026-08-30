@@ -1,9 +1,11 @@
+// src/app/remittances/page.tsx
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "../../components/layout/AppShell";
 import { Card, CardTitle, CardDescription } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
+import { Skeleton, SkeletonStatRow } from "../../components/ui/Skeleton";
 import { useWallet } from "../../lib/wallet";
 import { getRemittances, getRemittanceStats, verifyRemittance, type VerifiedTransfer, ApiError } from "../../lib/api";
 import { formatAmount, shortAddress, relativeTime } from "../../lib/utils";
@@ -55,6 +57,8 @@ export default function RemittancesPage() {
     );
   }
 
+  const initialLoading = loading && transfers.length === 0 && stats === null;
+
   return (
     <AppShell>
       <div className="animate-fade-up">
@@ -63,20 +67,24 @@ export default function RemittancesPage() {
           <p className="mt-2 text-[15px] text-fg-secondary">Every transfer proven on Creditcoin.</p>
         </div>
 
-        <div className="mb-4 grid gap-4 sm:grid-cols-3">
-          <Card className="!p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Transfers</p>
-            <p className="mt-2 font-[family-name:var(--font-serif)] text-2xl text-fg">{stats?.transferCount ?? transfers.length}</p>
-          </Card>
-          <Card className="!p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Total verified</p>
-            <p className="mt-2 font-[family-name:var(--font-serif)] text-2xl text-fg">${formatAmount(stats?.totalAmount ?? "0")}</p>
-          </Card>
-          <Card className="!p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Consistency</p>
-            <p className="mt-2 font-[family-name:var(--font-serif)] text-2xl text-fg">{stats?.consistencyBps != null ? `${(stats.consistencyBps / 100).toFixed(0)}%` : "—"}</p>
-          </Card>
-        </div>
+        {initialLoading ? (
+          <SkeletonStatRow count={3} />
+        ) : (
+          <div className="mb-4 grid gap-4 sm:grid-cols-3">
+            <Card className="!p-5">
+              <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Transfers</p>
+              <p className="mt-2 font-[family-name:var(--font-serif)] text-2xl tabular-nums text-fg">{stats?.transferCount ?? transfers.length}</p>
+            </Card>
+            <Card className="!p-5">
+              <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Total verified</p>
+              <p className="mt-2 font-[family-name:var(--font-serif)] text-2xl tabular-nums text-fg">${formatAmount(stats?.totalAmount ?? "0")}</p>
+            </Card>
+            <Card className="!p-5">
+              <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Consistency</p>
+              <p className="mt-2 font-[family-name:var(--font-serif)] text-2xl tabular-nums text-fg">{stats?.consistencyBps != null ? `${(stats.consistencyBps / 100).toFixed(0)}%` : "—"}</p>
+            </Card>
+          </div>
+        )}
 
         <Card className="mb-4">
           <div className="flex items-start gap-3">
@@ -95,8 +103,8 @@ export default function RemittancesPage() {
 
         <Card>
           <CardTitle className="!text-base mb-4">Verified transfers</CardTitle>
-          {loading ? (
-            <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="skeleton h-14 w-full" />)}</div>
+          {loading && transfers.length === 0 ? (
+            <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
           ) : transfers.length === 0 ? (
             <div className="flex flex-col items-center py-12 text-center">
               <Search className="mb-3 h-8 w-8 text-fg-muted" strokeWidth={1.5} />
@@ -116,9 +124,9 @@ export default function RemittancesPage() {
                 <tbody className="divide-y divide-border">
                   {transfers.map((t) => (
                     <tr key={t.sourceTxHash} className="transition-colors hover:bg-bg-muted/40">
-                      <td className="py-3.5 pr-4 font-medium text-fg">${formatAmount(t.amount)}</td>
+                      <td className="py-3.5 pr-4 font-medium tabular-nums text-fg">${formatAmount(t.amount)}</td>
                       <td className="py-3.5 pr-4 font-mono text-xs text-fg-secondary">{shortAddress(t.sender, 5)}</td>
-                      <td className="py-3.5 pr-4 text-fg-muted">{t.sourceTimestamp ? relativeTime(t.sourceTimestamp) : "—"}</td>
+                      <td className="py-3.5 pr-4 tabular-nums text-fg-muted">{t.sourceTimestamp ? relativeTime(t.sourceTimestamp) : "—"}</td>
                       <td className="py-3.5 font-mono text-xs text-fg-secondary">{shortAddress(t.sourceTxHash, 4)}</td>
                     </tr>
                   ))}

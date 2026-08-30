@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const tx = await client.addDeclaredSender(borrower, sender);
     const receipt = await tx.wait();
 
-    activityStore.append({
+    await activityStore.append({
       borrower,
       type: "borrower_registered",
       data: { action: "sender_added", sender, txHash: receipt?.hash ?? tx.hash },
@@ -45,7 +45,7 @@ export async function DELETE(req: Request) {
     const tx = await client.removeDeclaredSender(borrower, sender);
     const receipt = await tx.wait();
 
-    activityStore.append({
+    await activityStore.append({
       borrower,
       type: "borrower_registered",
       data: {

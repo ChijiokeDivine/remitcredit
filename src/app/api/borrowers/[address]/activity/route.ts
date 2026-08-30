@@ -1,3 +1,4 @@
+// src/app/api/borrowers/[address]/activity/route.ts
 import { isAddress } from "ethers";
 import { activityStore } from "../../../../../server/store";
 import { json, toErrorResponse, ApiError } from "../../../../../server/api-error";
@@ -12,7 +13,7 @@ export async function GET(
   try {
     const { address } = await ctx.params;
     if (!isAddress(address)) throw new ApiError(400, "Invalid address");
-    return json({ events: activityStore.listForBorrower(address) });
+    return json({ events: await activityStore.listForBorrower(address) });
   } catch (err) {
     return toErrorResponse(err);
   }

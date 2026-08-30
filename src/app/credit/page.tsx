@@ -1,3 +1,4 @@
+// src/app/credit/page.tsx
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "../../components/layout/AppShell";
@@ -5,6 +6,7 @@ import { Card, CardTitle, CardDescription } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
 import { InfoTip } from "../../components/ui/Tooltip";
+import { Skeleton, SkeletonStatRow } from "../../components/ui/Skeleton";
 import { useWallet } from "../../lib/wallet";
 import { getCredit, getCreditPreview, requestCreditReview, type CreditDecision, type CreditPreview, ApiError } from "../../lib/api";
 import { formatAmount, formatRisk } from "../../lib/utils";
@@ -63,6 +65,7 @@ export default function CreditPage() {
   const stats = preview?.stats;
   const decision = preview?.decision ?? credit;
   const progress = (current: number, target: number) => Math.min(100, Math.round((current / target) * 100));
+  const initialLoading = loading && !decision;
 
   return (
     <AppShell>
@@ -77,34 +80,45 @@ export default function CreditPage() {
           </Button>
         </div>
 
-        {msg && <p className="mb-4 rounded-xl border border-border bg-bg-muted px-4 py-3 text-sm text-fg">{msg}</p>}
+        {msg && <p className="mb-4 rounded-2xl border border-border bg-bg-muted px-4 py-3 text-sm text-fg">{msg}</p>}
 
-        <div className="mb-4 grid gap-4 sm:grid-cols-3">
-          <Card className="!p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Limit</p>
-            <p className="mt-2 font-[family-name:var(--font-serif)] text-3xl text-fg">${formatAmount(decision?.creditLimit ?? "0")}</p>
-          </Card>
-          <Card className="!p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Status</p>
-            <div className="mt-3"><Badge tone={decision?.eligible ? "success" : "muted"}>{decision?.eligible ? "Eligible" : "Building history"}</Badge></div>
-          </Card>
-          <Card className="!p-5">
-            <div className="flex items-center gap-1">
-              <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Risk</p>
-              <InfoTip label="Lower is better. 0 is the strongest score." />
-            </div>
-            <p className="mt-2 font-[family-name:var(--font-serif)] text-3xl text-fg">{decision ? formatRisk(decision.riskScoreBps) : "—"}</p>
-          </Card>
-        </div>
+        {initialLoading ? (
+          <SkeletonStatRow count={3} />
+        ) : (
+          <div className="mb-4 grid gap-4 sm:grid-cols-3">
+            <Card className="!p-5">
+              <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Limit</p>
+              <p className="mt-2 font-[family-name:var(--font-serif)] text-3xl tabular-nums text-fg">${formatAmount(decision?.creditLimit ?? "0")}</p>
+            </Card>
+            <Card className="!p-5">
+              <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Status</p>
+              <div className="mt-3"><Badge tone={decision?.eligible ? "success" : "muted"}>{decision?.eligible ? "Eligible" : "Building history"}</Badge></div>
+            </Card>
+            <Card className="!p-5">
+              <div className="flex items-center gap-1">
+                <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Risk</p>
+                <InfoTip label="Lower is better. 0 is the strongest score." />
+              </div>
+              <p className="mt-2 font-[family-name:var(--font-serif)] text-3xl tabular-nums text-fg">{decision ? formatRisk(decision.riskScoreBps) : "—"}</p>
+            </Card>
+          </div>
+        )}
 
         <Card className="mb-4">
           <div className="flex items-start gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bg-muted"><Info className="h-4 w-4 text-fg" /></div>
-            <div>
+            <div className="min-w-0 flex-1">
               <CardTitle className="!text-base">Rationale</CardTitle>
-              <p className="mt-2 text-[15px] leading-relaxed text-fg-secondary">
-                {preview?.rationale || (loading ? "Loading…" : "No decision yet. Verified remittances unlock a limit.")}
-              </p>
+              {initialLoading ? (
+                <div className="mt-3 space-y-2">
+                  <Skeleton className="h-3.5 w-full" />
+                  <Skeleton className="h-3.5 w-2/3" />
+                </div>
+              ) : (
+                <p className="mt-2 text-[15px] leading-relaxed text-fg-secondary">
+                  {preview?.rationale || "No decision yet. Verified remittances unlock a limit."}
+                </p>
+              )}
             </div>
           </div>
         </Card>
@@ -117,35 +131,49 @@ export default function CreditPage() {
               <CardDescription>How your history compares to the thresholds.</CardDescription>
             </div>
           </div>
-          <div className="space-y-6">
-            {THRESHOLDS.map((t) => {
-              let current = 0;
-              if (stats) {
-                if (t.key === "transferCount") current = stats.transferCount;
-                if (t.key === "totalAmount") current = Number(stats.totalAmount) / 1e6;
-                if (t.key === "consistencyBps") current = stats.consistencyBps / 100;
-              }
-              const pct = progress(current, t.target);
-              return (
+          {initialLoading ? (
+            <div className="space-y-6">
+              {THRESHOLDS.map((t) => (
                 <div key={t.key}>
                   <div className="mb-1.5 flex items-baseline justify-between gap-3">
-                    <div className="flex items-center gap-1">
-                      <p className="text-sm font-medium text-fg">{t.label}</p>
-                      <InfoTip label={t.description} />
-                    </div>
-                    <p className="shrink-0 text-sm text-fg-secondary">
-                      {t.unit === "$" ? `$${current.toFixed(0)}` : current.toFixed(0)}
-                      {t.unit === "%" ? "%" : ""}
-                      <span className="text-fg-muted"> / {t.unit === "$" ? `$${t.target}` : t.target}{t.unit === "%" ? "%" : ""}</span>
-                    </p>
+                    <Skeleton className="h-3.5 w-32" />
+                    <Skeleton className="h-3.5 w-16" />
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-bg-muted">
-                    <div className="h-full rounded-full bg-fg transition-all duration-700 ease-out" style={{ width: `${pct}%` }} />
-                  </div>
+                  <Skeleton className="h-1.5 w-full rounded-full" />
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {THRESHOLDS.map((t) => {
+                let current = 0;
+                if (stats) {
+                  if (t.key === "transferCount") current = stats.transferCount;
+                  if (t.key === "totalAmount") current = Number(stats.totalAmount) / 1e6;
+                  if (t.key === "consistencyBps") current = stats.consistencyBps / 100;
+                }
+                const pct = progress(current, t.target);
+                return (
+                  <div key={t.key}>
+                    <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                      <div className="flex items-center gap-1">
+                        <p className="text-sm font-medium text-fg">{t.label}</p>
+                        <InfoTip label={t.description} />
+                      </div>
+                      <p className="shrink-0 text-sm tabular-nums text-fg-secondary">
+                        {t.unit === "$" ? `$${current.toFixed(0)}` : current.toFixed(0)}
+                        {t.unit === "%" ? "%" : ""}
+                        <span className="text-fg-muted"> / {t.unit === "$" ? `$${t.target}` : t.target}{t.unit === "%" ? "%" : ""}</span>
+                      </p>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-bg-muted">
+                      <div className="h-full rounded-full bg-accent transition-all duration-700 ease-out" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Card>
       </div>
     </AppShell>

@@ -1,3 +1,4 @@
+// src/app/loans/page.tsx
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "../../components/layout/AppShell";
@@ -5,6 +6,7 @@ import { Card, CardTitle, CardDescription } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
+import { Skeleton } from "../../components/ui/Skeleton";
 import { useWallet } from "../../lib/wallet";
 import { getLoan, requestLoan, repayLoan, type LoanStatus, ApiError } from "../../lib/api";
 import { formatAmount } from "../../lib/utils";
@@ -13,6 +15,7 @@ import { Banknote, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 export default function LoansPage() {
   const { address } = useWallet();
   const [loan, setLoan] = useState<LoanStatus | null>(null);
+  const [loading, setLoading] = useState(false);
   const [requestAmount, setRequestAmount] = useState("");
   const [repayAmount, setRepayAmount] = useState("");
   const [action, setAction] = useState<"request" | "repay" | null>(null);
@@ -21,7 +24,8 @@ export default function LoansPage() {
 
   const load = useCallback(async () => {
     if (!address) return;
-    try { setLoan(await getLoan(address)); } catch { /* offline */ }
+    setLoading(true);
+    try { setLoan(await getLoan(address)); } catch { /* offline */ } finally { setLoading(false); }
   }, [address]);
 
   useEffect(() => { load(); }, [load]);
@@ -75,6 +79,7 @@ export default function LoansPage() {
   const available = loan?.availableCredit ?? "0";
   const hasLoan = Number(outstanding) > 0;
   const utilizationPct = Number(limit) > 0 ? Math.min(100, Math.round((Number(outstanding) / Number(limit)) * 100)) : 0;
+  const initialLoading = loading && loan === null;
 
   return (
     <AppShell>
@@ -84,31 +89,45 @@ export default function LoansPage() {
           <p className="mt-2 text-[15px] text-fg-secondary">Draw against your verified credit line.</p>
         </div>
 
+        {/* Balance summary card, mirrored while the first fetch is in flight. */}
         <Card className="mb-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Outstanding balance</p>
-                {hasLoan && <Badge tone="outline">Active loan</Badge>}
+          {initialLoading ? (
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-8 w-28" />
               </div>
-              <p className="mt-2 font-[family-name:var(--font-serif)] text-3xl text-fg">${formatAmount(outstanding)}</p>
+              <div className="space-y-2 text-right">
+                <Skeleton className="ml-auto h-3 w-20" />
+                <Skeleton className="ml-auto h-8 w-24" />
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Available</p>
-              <p className="mt-2 font-[family-name:var(--font-serif)] text-3xl text-fg">${formatAmount(available)}</p>
+          ) : (
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Outstanding balance</p>
+                  {hasLoan && <Badge tone="outline">Active loan</Badge>}
+                </div>
+                <p className="mt-2 font-[family-name:var(--font-serif)] text-3xl tabular-nums text-fg">${formatAmount(outstanding)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">Available</p>
+                <p className="mt-2 font-[family-name:var(--font-serif)] text-3xl tabular-nums text-fg">${formatAmount(available)}</p>
+              </div>
             </div>
-          </div>
+          )}
           <div className="mt-5">
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-bg-muted">
-              <div className="h-full rounded-full bg-fg transition-all duration-700 ease-out" style={{ width: `${utilizationPct}%` }} />
+              <div className="h-full rounded-full bg-accent transition-all duration-700 ease-out" style={{ width: `${initialLoading ? 0 : utilizationPct}%` }} />
             </div>
-            <div className="mt-2 flex items-center justify-between text-xs text-fg-muted">
-              <span>{utilizationPct}% of ${formatAmount(limit)} limit used</span>
+            <div className="mt-2 flex items-center justify-between text-xs tabular-nums text-fg-muted">
+              <span>{initialLoading ? "—" : `${utilizationPct}% of $${formatAmount(limit)} limit used`}</span>
             </div>
           </div>
         </Card>
 
-        {(msg || error) && <p className="mb-4 rounded-xl border border-border bg-bg-muted px-4 py-3 text-sm text-fg">{error || msg}</p>}
+        {(msg || error) && <p className="mb-4 rounded-2xl border border-border bg-bg-muted px-4 py-3 text-sm text-fg">{error || msg}</p>}
 
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>

@@ -1,3 +1,4 @@
+// src/app/onboarding/page.tsx
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -8,7 +9,7 @@ import { Button } from "../../components/ui/Button";
 import { useWallet } from "../../lib/wallet";
 import { registerBorrower, ApiError } from "../../lib/api";
 import { isAddress } from "ethers";
-import { Plus, X, ArrowRight } from "lucide-react";
+import { Plus, X, ArrowRight, Check } from "lucide-react";
 
 export default function OnboardingPage() {
   const { address, connect, isConnecting } = useWallet();
@@ -21,6 +22,7 @@ export default function OnboardingPage() {
   const updateSender = (i: number, value: string) => setSenders((prev) => prev.map((s, idx) => (idx === i ? value : s)));
   const addSender = () => setSenders((prev) => [...prev, ""]);
   const removeSender = (i: number) => setSenders((prev) => prev.filter((_, idx) => idx !== i));
+  const validCount = senders.map((s) => s.trim()).filter(Boolean).length;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,8 +67,8 @@ export default function OnboardingPage() {
           </Card>
         ) : success ? (
           <Card className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-bg-muted">
-              <ArrowRight className="h-5 w-5 text-fg" />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
+              <Check className="h-5 w-5 text-accent" />
             </div>
             <CardTitle>You&apos;re registered</CardTitle>
             <CardDescription>Redirecting to your dashboard…</CardDescription>
@@ -76,7 +78,7 @@ export default function OnboardingPage() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <p className="mb-1 text-sm font-medium text-fg">Your wallet</p>
-                <p className="rounded-md bg-bg-muted px-3 py-2.5 font-mono text-sm text-fg-secondary">{address}</p>
+                <p className="rounded-lg bg-bg-muted px-3 py-2.5 font-mono text-sm text-fg-secondary">{address}</p>
               </div>
               <div className="space-y-3">
                 <p className="text-sm font-medium text-fg">Declared senders</p>
@@ -84,18 +86,29 @@ export default function OnboardingPage() {
                   <div key={i} className="flex gap-2">
                     <Input placeholder="0x…" value={s} onChange={(e) => updateSender(i, e.target.value)} className="font-mono text-sm" />
                     {senders.length > 1 && (
-                      <button type="button" onClick={() => removeSender(i)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border text-fg-muted transition hover:bg-bg-muted hover:text-fg active:scale-95" aria-label="Remove sender">
+                      <button type="button" onClick={() => removeSender(i)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border text-fg-muted transition hover:bg-bg-muted hover:text-fg active:scale-95" aria-label="Remove sender">
                         <X className="h-4 w-4" />
                       </button>
                     )}
                   </div>
                 ))}
-                <button type="button" onClick={addSender} className="flex items-center gap-1.5 text-sm font-medium text-fg-secondary transition hover:text-fg">
+                <button type="button" onClick={addSender} className="flex items-center gap-1.5 text-sm font-medium text-accent transition hover:opacity-80">
                   <Plus className="h-4 w-4" /> Add another sender
                 </button>
               </div>
-              {error && <p className="rounded-md bg-bg-muted px-3 py-2 text-sm text-fg">{error}</p>}
-              <Button type="submit" className="w-full" loading={loading}>Register &amp; continue</Button>
+
+              {/* Review-before-submit summary, matching the confirm-what's-
+                  about-to-happen pattern used for card ordering and other
+                  irreversible on-chain actions. */}
+              <div className="rounded-lg bg-bg-muted px-3.5 py-3">
+                <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">You&apos;re about to register</p>
+                <p className="mt-1 text-sm text-fg">
+                  {validCount > 0 ? `${validCount} sender${validCount === 1 ? "" : "s"}` : "No senders yet"} · Recorded on-chain instantly
+                </p>
+              </div>
+
+              {error && <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger-fg">{error}</p>}
+              <Button type="submit" className="w-full" loading={loading} disabled={validCount === 0}>Register &amp; continue</Button>
             </form>
           </Card>
         )}
