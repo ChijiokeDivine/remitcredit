@@ -22,7 +22,7 @@ async function main() {
   });
 
   await monitor.start();
-  agentLoop.start();
+  await agentLoop.start();
 
   const shutdown = () => {
     console.log("[worker] shutting down");

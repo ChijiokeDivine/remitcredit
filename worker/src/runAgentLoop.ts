@@ -2,6 +2,7 @@
 import { RemitCreditConfig } from "../../shared/config";
 import { RemitCreditClient } from "../../shared/services/contractClient";
 import { decideCreditLine, CreditAgentParams } from "../../shared/services/creditAgent";
+import { pendingReviewStore } from "../../shared/services/pendingReviewStore";
 
 /// Tracks which borrowers had a verified remittance land since their last
 /// on-chain credit review, and triggers requestCreditReview for them. Kept
@@ -20,12 +21,29 @@ export class AgentLoop {
   }
 
   /// Call this whenever the monitor records a new verified transfer for a
-  /// borrower, to flag them for review on the next tick.
+  /// borrower, to flag them for review on the next tick. Persisted
+  /// immediately so a crash before the next tick doesn't lose it.
   markDirty(borrower: string): void {
-    this.pendingReview.add(borrower.toLowerCase());
+    const key = borrower.toLowerCase();
+    this.pendingReview.add(key);
+    pendingReviewStore
+      .add(key)
+      .catch((error) => console.error(`[agent-loop] failed to persist pending review for ${key}:`, error));
   }
 
-  start(): void {
+  async start(): Promise<void> {
+    // Recover anything left over from a previous run (e.g. a crash between
+    // markDirty and a successful requestCreditReview).
+    try {
+      const recovered = await pendingReviewStore.list();
+      for (const borrower of recovered) this.pendingReview.add(borrower.toLowerCase());
+      if (recovered.length > 0) {
+        console.log(`[agent-loop] recovered ${recovered.length} pending review(s) from last run`);
+      }
+    } catch (error) {
+      console.error("[agent-loop] failed to recover pending reviews:", error);
+    }
+
     this.timer = setInterval(() => {
       this.tick().catch((error) => console.error("[agent-loop] tick failed:", error));
     }, this.config.worker.pollIntervalMs);
@@ -46,9 +64,16 @@ export class AgentLoop {
         const tx = await this.client.requestCreditReview(borrower);
         await tx.wait();
         console.log(`[agent-loop] reviewed ${borrower} (tx ${tx.hash})`);
+        // Only clear the durable record once the review has actually landed
+        // on-chain — if the process dies before this line, the borrower
+        // stays queued in Redis and gets picked back up on the next start().
+        await pendingReviewStore
+          .remove(borrower)
+          .catch((error) => console.error(`[agent-loop] failed to clear persisted review for ${borrower}:`, error));
       } catch (error) {
         console.error(`[agent-loop] review failed for ${borrower}:`, error);
         // Re-queue for the next tick rather than dropping it silently.
+        // It was never removed from the store above, so no extra write needed.
         this.pendingReview.add(borrower);
       }
     }

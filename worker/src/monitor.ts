@@ -117,7 +117,7 @@ export class RemittanceMonitor {
       const borrowers = this.senderToBorrowers.get(senderKey);
       if (!borrowers || !borrowers.has(to.toLowerCase())) return; // not a tracked remittance
 
-      const txHash: string = "log" in event ? event.log?.transactionHash : (event as any).transactionHash;
+      const txHash: string = (event as EventLog | Log).transactionHash;
 
       try {
         const result = await submitRemittanceProofForTx(this.config, this.client, to, txHash);
