@@ -8,12 +8,14 @@ import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
 import { Skeleton } from "../../components/ui/Skeleton";
 import { useWallet } from "../../lib/wallet";
+import { useRepayApproval } from "../../lib/useRepayApproval";
 import { getLoan, getCreditPreview, requestCreditReview, requestLoan, repayLoan, type LoanStatus, type CreditPreview, ApiError } from "../../lib/api";
 import { formatAmount } from "../../lib/utils";
-import { Banknote, ArrowDownLeft, ArrowUpRight, Sparkles } from "lucide-react";
+import { Banknote, ArrowDownLeft, ArrowUpRight, Sparkles, ShieldCheck } from "lucide-react";
 
 export default function LoansPage() {
   const { address } = useWallet();
+  const { needsApproval, approve, isSigning, isConfirming } = useRepayApproval();
   const [loan, setLoan] = useState<LoanStatus | null>(null);
   const [preview, setPreview] = useState<CreditPreview | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,6 +23,7 @@ export default function LoansPage() {
   const [requestAmount, setRequestAmount] = useState("");
   const [repayAmount, setRepayAmount] = useState("");
   const [action, setAction] = useState<"request" | "repay" | null>(null);
+  const [repayStep, setRepayStep] = useState<"approve" | "repay" | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,13 +80,24 @@ export default function LoansPage() {
     if (!address) return;
     setAction("repay"); setError(null); setMsg(null);
     try {
-      const res = await repayLoan(address, toUnits(repayAmount));
+      const amountBaseUnits = toUnits(repayAmount);
+      // repay() pulls tokens from the borrower's own wallet via
+      // transferFrom, which only works once they've personally approved
+      // the loan contract as a spender — that has to be signed by their
+      // wallet, not the relayer, so it happens here before the relayer
+      // call that actually records the repayment.
+      if (needsApproval(BigInt(amountBaseUnits))) {
+        setRepayStep("approve");
+        await approve();
+      }
+      setRepayStep("repay");
+      const res = await repayLoan(address, amountBaseUnits);
       setMsg(`Repayment recorded. Tx: ${res.txHash.slice(0, 10)}…`);
       setRepayAmount("");
       await load();
     } catch (err) {
       setError(err instanceof ApiError || err instanceof Error ? err.message : "Repayment failed.");
-    } finally { setAction(null); }
+    } finally { setAction(null); setRepayStep(null); }
   };
 
   if (!address) {
@@ -198,7 +212,20 @@ export default function LoansPage() {
             <form onSubmit={handleRepay} className="space-y-4">
               <Input label="Amount (USD)" type="number" step="0.01" min="0" placeholder="50.00" value={repayAmount} onChange={(e) => setRepayAmount(e.target.value)} />
               <Button type="button" variant="outline" size="sm" onClick={() => setRepayAmount(formatAmount(outstanding).replace(/,/g, ""))} disabled={!hasLoan}>Full balance</Button>
-              <Button type="submit" className="w-full" loading={action === "repay"} disabled={!repayAmount || !hasLoan}>Repay</Button>
+              <Button type="submit" className="w-full" loading={action === "repay"} disabled={!repayAmount || !hasLoan}>
+                {repayStep === "approve" && isSigning ? (
+                  <><ShieldCheck className="h-4 w-4" /> Confirm in wallet…</>
+                ) : repayStep === "approve" && isConfirming ? (
+                  "Confirming approval…"
+                ) : repayStep === "repay" ? (
+                  "Repaying…"
+                ) : (
+                  "Repay"
+                )}
+              </Button>
+              {repayStep === "approve" && (
+                <p className="text-xs text-fg-muted">One-time approval — confirm the request in your wallet, then wait for it to confirm on-chain. You won&apos;t need to do this again.</p>
+              )}
             </form>
           </Card>
         </div>
