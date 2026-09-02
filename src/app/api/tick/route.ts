@@ -72,6 +72,13 @@ async function handleTick(req: NextRequest) {
     // ── 1. Resolve transactions broadcast earlier
     for (const kind of ["proof", "review"] as const) {
       for (const entry of await inFlightTxStore.list(kind)) {
+        const STALE_MS = 30 * 60 * 1000; // 30 min
+        if (Date.now() - entry.submittedAt > STALE_MS) {
+          await inFlightTxStore.remove(kind, entry.txHash);
+          console.warn(`[tick] dropped stale ${kind} ${entry.txHash}`);
+          if (kind === "review") await pendingReviewStore.add(entry.borrower);
+          continue;
+        }
         const receipt = await client.provider.getTransactionReceipt(entry.txHash);
 
         if (!receipt) continue; // still pending
