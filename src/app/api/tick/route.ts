@@ -1,23 +1,27 @@
 // app/api/tick/route.ts
+//
+// Slim tick — confirmation + credit review only.
+// Source-chain scanning was moved to the Alchemy webhook
+// (app/api/alchemy/remittance). This route is intended to be hit by
+// Vercel Cron (or any external scheduler) every 1–2 minutes.
+//
+// Flow:
+//   1. Resolve in-flight proof / review txs
+//        - confirmed proof  → pendingReviewStore.add(borrower)
+//        - confirmed review → clear
+//        - reverted proof   → log
+//        - reverted review  → re-queue borrower
+//   2. Fire any queued credit reviews (requestCreditReview)
 
 import { NextRequest, NextResponse } from "next/server";
-import { Contract, JsonRpcProvider } from "ethers";
 import { loadConfig } from "../../../../shared/config";
 import { RemitCreditClient } from "../../../../shared/services/contractClient";
-import { ERC20_ABI } from "../../../../shared/abi";
-import { buildSenderToBorrowersMap } from "../../../../shared/services/borrowerRegistry";
-import { checkpointStore } from "../../../../shared/services/checkpointStore";
 import { inFlightTxStore } from "../../../../shared/services/inFlightTxStore";
 import { pendingReviewStore } from "../../../../shared/services/pendingReviewStore";
-import {
-  sendRemittanceProofTx,
-  AlreadyRecordedError,
-} from "../../../../shared/services/remittanceProofTx";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-const MAX_BLOCK_SPAN = 2000;
 
 class UnauthorizedError extends Error {}
 
@@ -31,7 +35,6 @@ function assertAuthorized(req: NextRequest): void {
   }
 
   const providedSecret = req.nextUrl.searchParams.get("worker_tick_secret");
-
   if (providedSecret !== secret) {
     throw new UnauthorizedError();
   }
@@ -44,12 +47,8 @@ export async function GET(req: NextRequest) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
-
     console.error("[tick] auth misconfiguration:", error);
-    return NextResponse.json(
-      { error: "server misconfigured" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "server misconfigured" }, { status: 500 });
   }
 
   const summary = {
@@ -57,149 +56,53 @@ export async function GET(req: NextRequest) {
     confirmedReviews: 0,
     revertedProofs: 0,
     revertedReviews: 0,
-    newProofsSent: 0,
     reviewsSent: 0,
-    scannedFrom: 0,
-    scannedTo: 0,
   };
 
   try {
     const config = loadConfig();
     const client = new RemitCreditClient(config, config.worker.privateKey);
 
-    // ── 1. Resolve transactions broadcast on a previous tick ───────────
+    // ── 1. Resolve transactions broadcast earlier (webhook or previous tick)
     for (const kind of ["proof", "review"] as const) {
       for (const entry of await inFlightTxStore.list(kind)) {
-        const receipt = await client.provider.getTransactionReceipt(
-          entry.txHash
-        );
+        const receipt = await client.provider.getTransactionReceipt(entry.txHash);
 
-        if (!receipt) continue;
+        if (!receipt) continue; // still pending
 
         await inFlightTxStore.remove(kind, entry.txHash);
 
         if (receipt.status === 1) {
           if (kind === "proof") {
             summary.confirmedProofs++;
+            // Proof confirmed → queue credit review (review AFTER proof)
             await pendingReviewStore.add(entry.borrower);
+            console.log(
+              `[tick] proof confirmed ${entry.txHash} → queued review for ${entry.borrower}`
+            );
           } else {
             summary.confirmedReviews++;
+            console.log(`[tick] review confirmed ${entry.txHash} for ${entry.borrower}`);
           }
         } else {
           console.error(
             `[tick] ${kind} tx ${entry.txHash} for ${entry.borrower} reverted`
           );
-
           if (kind === "proof") {
             summary.revertedProofs++;
           } else {
             summary.revertedReviews++;
+            // Re-queue so we try the review again
             await pendingReviewStore.add(entry.borrower);
           }
         }
       }
     }
 
-    // ── 2. Scan the source chain for new remittances ────────────────────
-    const sourceProvider = new JsonRpcProvider(
-      config.sourceChain.rpcUrl
-    );
-
-    const remittanceToken = new Contract(
-      config.sourceChain.remittanceTokenAddress,
-      ERC20_ABI,
-      sourceProvider
-    );
-
-    const currentBlock = await sourceProvider.getBlockNumber();
-    const lastScanned = await checkpointStore.get();
-
-    const backfillBlocks = Number(
-      process.env.WORKER_BACKFILL_BLOCKS ?? "0"
-    );
-
-    const fromBlock =
-      lastScanned !== null
-        ? lastScanned + 1
-        : Math.max(0, currentBlock - backfillBlocks);
-
-    const toBlock = Math.min(
-      currentBlock,
-      fromBlock + MAX_BLOCK_SPAN
-    );
-
-    summary.scannedFrom = fromBlock;
-    summary.scannedTo = toBlock;
-
-    if (fromBlock <= toBlock) {
-      const senderToBorrowers =
-        await buildSenderToBorrowersMap(client);
-
-      const logs = await remittanceToken.queryFilter(
-        remittanceToken.filters.Transfer(),
-        fromBlock,
-        toBlock
-      );
-
-      for (const log of logs) {
-        if (!("args" in log) || !log.args) continue;
-
-        const [from, to] = log.args as unknown as [
-          string,
-          string,
-          bigint
-        ];
-
-        const borrowers = senderToBorrowers.get(
-          (from as string).toLowerCase()
-        );
-
-        if (
-          !borrowers ||
-          !borrowers.has((to as string).toLowerCase())
-        ) {
-          continue;
-        }
-
-        const txHash = log.transactionHash;
-
-        const alreadyInFlight = (
-          await inFlightTxStore.list("proof")
-        ).some((e) => e.sourceTxHash === txHash);
-
-        if (alreadyInFlight) continue;
-
-        try {
-          const sent = await sendRemittanceProofTx(
-            config,
-            client,
-            to as string,
-            txHash
-          );
-
-          await inFlightTxStore.add("proof", {
-            txHash: sent.tx.hash,
-            borrower: to as string,
-            sourceTxHash: txHash,
-            submittedAt: Date.now(),
-          });
-
-          summary.newProofsSent++;
-        } catch (error) {
-          if (error instanceof AlreadyRecordedError) continue;
-
-          console.error(
-            `[tick] failed to submit proof for ${txHash} (borrower ${to}):`,
-            error
-          );
-        }
-      }
-
-      await checkpointStore.set(toBlock);
-    }
-
-    // ── 3. Fire any queued credit reviews ───────────────────────────────
+    // ── 2. Fire queued credit reviews
     for (const borrower of await pendingReviewStore.list()) {
+      // Remove first so a crash mid-send doesn't double-fire forever;
+      // on failure we re-add below.
       await pendingReviewStore.remove(borrower);
 
       try {
@@ -212,28 +115,18 @@ export async function GET(req: NextRequest) {
         });
 
         summary.reviewsSent++;
+        console.log(`[tick] review sent for ${borrower} tx=${tx.hash}`);
       } catch (error) {
-        console.error(
-          `[tick] failed to send review for ${borrower}:`,
-          error
-        );
-
+        console.error(`[tick] failed to send review for ${borrower}:`, error);
         await pendingReviewStore.add(borrower);
       }
     }
 
-    return NextResponse.json({
-      ok: true,
-      ...summary,
-    });
+    return NextResponse.json({ ok: true, ...summary });
   } catch (error) {
     console.error("[tick] fatal error:", error);
-
     return NextResponse.json(
-      {
-        ok: false,
-        error: String(error),
-      },
+      { ok: false, error: String(error) },
       { status: 500 }
     );
   }

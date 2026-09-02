@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/tick?worker_tick_secret=REPLACE_WITH_WORKER_TICK_SECRET",
+      "schedule": "*/2 * * * *"
+    }
+  ]
+}
