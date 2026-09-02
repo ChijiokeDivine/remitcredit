@@ -70,5 +70,11 @@
     "plugins": {
       "@tailwindcss/postcss": {}
     }
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "keccak",
+      "secp256k1"
+    ]
   }
 }
