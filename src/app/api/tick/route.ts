@@ -26,18 +26,25 @@ export const maxDuration = 60;
 class UnauthorizedError extends Error {}
 
 function assertAuthorized(req: NextRequest): void {
-  const secret = process.env.WORKER_TICK_SECRET;
+  const tickSecret = process.env.WORKER_TICK_SECRET;
+  const cronSecret = process.env.CRON_SECRET;
 
-  if (!secret) {
+  if (!tickSecret && !cronSecret) {
     throw new Error(
-      "WORKER_TICK_SECRET is not set — refusing to run an unprotected tick endpoint"
+      "WORKER_TICK_SECRET or CRON_SECRET must be set — refusing unprotected tick"
     );
   }
 
-  const providedSecret = req.nextUrl.searchParams.get("worker_tick_secret");
-  if (providedSecret !== secret) {
-    throw new UnauthorizedError();
-  }
+  const fromQuery = req.nextUrl.searchParams.get("worker_tick_secret");
+  const auth = req.headers.get("authorization");
+  const fromBearer =
+    auth?.startsWith("Bearer ") ? auth.slice("Bearer ".length) : null;
+
+  const ok =
+    (tickSecret && fromQuery === tickSecret) ||
+    (cronSecret && fromBearer === cronSecret);
+
+  if (!ok) throw new UnauthorizedError();
 }
 
 export async function GET(req: NextRequest) {
