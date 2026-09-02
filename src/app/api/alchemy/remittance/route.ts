@@ -8,11 +8,13 @@
 //
 // Credit review itself stays in /api/tick so it only runs AFTER the proof
 // tx has confirmed on Creditcoin (matches "review after proof").
+//
+// Tracking check uses isDeclaredSender (eth_call) per transfer — not a full
+// eth_getLogs rebuild of the registry (that times out on Creditcoin RPC).
 
 import { NextRequest, NextResponse } from "next/server";
 import { loadConfig } from "../../../../../shared/config";
 import { RemitCreditClient } from "../../../../../shared/services/contractClient";
-import { buildSenderToBorrowersMap } from "../../../../../shared/services/borrowerRegistry";
 import { inFlightTxStore } from "../../../../../shared/services/inFlightTxStore";
 import {
   sendRemittanceProofTx,
@@ -55,15 +57,26 @@ export async function POST(req: NextRequest) {
   }
 
   const client = new RemitCreditClient(config, config.worker.privateKey);
-  const senderToBorrowers = await buildSenderToBorrowersMap(client);
 
   let processed = 0;
   const results: Array<{ txHash: string; status: string; borrower?: string }> = [];
 
   for (const { from, to, txHash } of transfers) {
-    const borrowers = senderToBorrowers.get(from);
-    if (!borrowers || !borrowers.has(to)) {
-      results.push({ txHash, status: "ignored_not_tracked" });
+    // Cheap per-pair check — avoids eth_getLogs from genesis on Creditcoin
+    let isTracked = false;
+    try {
+      isTracked = await client.isDeclaredSender(to, from);
+    } catch (err) {
+      console.error(
+        `[alchemy/remittance] isDeclaredSender failed borrower=${to} sender=${from}:`,
+        err
+      );
+      results.push({ txHash, status: "error", borrower: to });
+      continue;
+    }
+
+    if (!isTracked) {
+      results.push({ txHash, status: "ignored_not_tracked", borrower: to });
       continue;
     }
 
@@ -98,7 +111,7 @@ export async function POST(req: NextRequest) {
       console.error(`[alchemy/remittance] failed proof for ${txHash}:`, err);
       results.push({ txHash, status: "error", borrower: to });
       // Still 200 — permanent failures should not cause Alchemy retries.
-      // Transient cases can be recovered via /api/remittances/verify or a future tick backfill.
+      // Transient cases can be recovered via /api/remittances/verify or a future tick.
     }
   }
 
