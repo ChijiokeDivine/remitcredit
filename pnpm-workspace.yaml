@@ -1,0 +1,7 @@
+# pnpm-workspace.yaml
+packages:
+  - "."
+
+allowBuilds:
+  keccak: true
+  secp256k1: true
