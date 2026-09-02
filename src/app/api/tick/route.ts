@@ -1,17 +1,8 @@
 // app/api/tick/route.ts
 //
 // Slim tick — confirmation + credit review only.
-// Source-chain scanning was moved to the Alchemy webhook
-// (app/api/alchemy/remittance). This route is intended to be hit by
-// Vercel Cron (or any external scheduler) every 1–2 minutes.
-//
-// Flow:
-//   1. Resolve in-flight proof / review txs
-//        - confirmed proof  → pendingReviewStore.add(borrower)
-//        - confirmed review → clear
-//        - reverted proof   → log
-//        - reverted review  → re-queue borrower
-//   2. Fire any queued credit reviews (requestCreditReview)
+// Designed to be triggered externally (e.g., cron-job.org, Upstash QStash, or GitHub Actions)
+// every 1–2 minutes.
 
 import { NextRequest, NextResponse } from "next/server";
 import { loadConfig } from "../../../../shared/config";
@@ -35,19 +26,27 @@ function assertAuthorized(req: NextRequest): void {
     );
   }
 
-  const fromQuery = req.nextUrl.searchParams.get("worker_tick_secret");
-  const auth = req.headers.get("authorization");
-  const fromBearer =
-    auth?.startsWith("Bearer ") ? auth.slice("Bearer ".length) : null;
+  // 1. Check Bearer token (Standard Vercel Cron / QStash header)
+  const authHeader = req.headers.get("authorization");
+  const bearerToken = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice("Bearer ".length)
+    : null;
 
-  const ok =
-    (tickSecret && fromQuery === tickSecret) ||
-    (cronSecret && fromBearer === cronSecret);
+  // 2. Check direct custom headers (e.g., cron-job.org header)
+  const headerSecret = req.headers.get("x-cron-secret");
 
-  if (!ok) throw new UnauthorizedError();
+  // 3. Check query string parameter (?worker_tick_secret=xxx)
+  const querySecret = req.nextUrl.searchParams.get("worker_tick_secret");
+
+  const isAuthorized =
+    (cronSecret && bearerToken === cronSecret) ||
+    (cronSecret && headerSecret === cronSecret) ||
+    (tickSecret && querySecret === tickSecret);
+
+  if (!isAuthorized) throw new UnauthorizedError();
 }
 
-export async function GET(req: NextRequest) {
+async function handleTick(req: NextRequest) {
   try {
     assertAuthorized(req);
   } catch (error) {
@@ -70,7 +69,7 @@ export async function GET(req: NextRequest) {
     const config = loadConfig();
     const client = new RemitCreditClient(config, config.worker.privateKey);
 
-    // ── 1. Resolve transactions broadcast earlier (webhook or previous tick)
+    // ── 1. Resolve transactions broadcast earlier
     for (const kind of ["proof", "review"] as const) {
       for (const entry of await inFlightTxStore.list(kind)) {
         const receipt = await client.provider.getTransactionReceipt(entry.txHash);
@@ -82,7 +81,6 @@ export async function GET(req: NextRequest) {
         if (receipt.status === 1) {
           if (kind === "proof") {
             summary.confirmedProofs++;
-            // Proof confirmed → queue credit review (review AFTER proof)
             await pendingReviewStore.add(entry.borrower);
             console.log(
               `[tick] proof confirmed ${entry.txHash} → queued review for ${entry.borrower}`
@@ -99,7 +97,6 @@ export async function GET(req: NextRequest) {
             summary.revertedProofs++;
           } else {
             summary.revertedReviews++;
-            // Re-queue so we try the review again
             await pendingReviewStore.add(entry.borrower);
           }
         }
@@ -108,8 +105,6 @@ export async function GET(req: NextRequest) {
 
     // ── 2. Fire queued credit reviews
     for (const borrower of await pendingReviewStore.list()) {
-      // Remove first so a crash mid-send doesn't double-fire forever;
-      // on failure we re-add below.
       await pendingReviewStore.remove(borrower);
 
       try {
@@ -137,4 +132,12 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function GET(req: NextRequest) {
+  return handleTick(req);
+}
+
+export async function POST(req: NextRequest) {
+  return handleTick(req);
 }
