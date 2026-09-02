@@ -5,3 +5,6 @@ packages:
 allowBuilds:
   keccak: true
   secp256k1: true
+  sha3: true
+  "@swc/core": true
+  esbuild: true
