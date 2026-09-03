@@ -1,16 +1,8 @@
 // app/api/alchemy/remittance/route.ts
 //
-// Alchemy Custom Webhook receiver for source-chain ERC-20 Transfer events.
-// On a tracked (declaredSender → borrower) remittance:
-//   1. sendRemittanceProofTx  (broadcast, do not wait for confirmation)
-//   2. record in inFlightTxStore so the slim /api/tick can confirm later
-//      and queue the credit review.
-//
-// Credit review itself stays in /api/tick so it only runs AFTER the proof
-// tx has confirmed on Creditcoin (matches "review after proof").
-//
-// Tracking check uses isDeclaredSender (eth_call) per transfer — not a full
-// eth_getLogs rebuild of the registry (that times out on Creditcoin RPC).
+// Extended Alchemy webhook: after proving a tracked transfer, update
+// off-chain probation + reputation (Features 1–2). On-chain proof path
+// is unchanged.
 
 import { NextRequest, NextResponse } from "next/server";
 import { loadConfig } from "../../../../../shared/config";
@@ -24,6 +16,7 @@ import {
   verifyAlchemySignature,
   parseTransfersFromAlchemyPayload,
 } from "../../../../server/alchemyWebhook";
+import { handleVerifiedTransfer } from "../../../../../shared/services/senderLifecycle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,7 +39,6 @@ export async function POST(req: NextRequest) {
 
   const transfers = parseTransfersFromAlchemyPayload(payload);
   if (transfers.length === 0) {
-    // Alchemy test pings / empty blocks — acknowledge so they stop retrying.
     return NextResponse.json({ ok: true, processed: 0 });
   }
 
@@ -59,10 +51,15 @@ export async function POST(req: NextRequest) {
   const client = new RemitCreditClient(config, config.worker.privateKey);
 
   let processed = 0;
-  const results: Array<{ txHash: string; status: string; borrower?: string }> = [];
+  const results: Array<{
+    txHash: string;
+    status: string;
+    borrower?: string;
+    weightBps?: number;
+    graduated?: boolean;
+  }> = [];
 
-  for (const { from, to, txHash } of transfers) {
-    // Cheap per-pair check — avoids eth_getLogs from genesis on Creditcoin
+  for (const { from, to, txHash, data } of transfers) {
     let isTracked = false;
     try {
       isTracked = await client.isDeclaredSender(to, from);
@@ -80,11 +77,47 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
+    // Feature 1–2: look up probation weight BEFORE score attribution,
+    // then increment graduation counters. Amount is best-effort from log data.
+    let amount: string = "0";
+    if (data && data !== "0x") {
+      try {
+        amount = BigInt(data).toString();
+      } catch {
+        amount = "0";
+      }
+    }
+
+    let weightBps = 10000;
+    let graduated = false;
+    try {
+      const lifecycle = await handleVerifiedTransfer(from, to, amount);
+      weightBps = lifecycle.weightBps;
+      graduated = lifecycle.graduated;
+      console.log(
+        `[alchemy/remittance] probation sender=${from} borrower=${to} weightBps=${weightBps} graduated=${graduated} — ${lifecycle.explanation}`
+      );
+      if (lifecycle.structuring?.flagged) {
+        console.warn(
+          `[alchemy/remittance] structuring signal sender=${from}: ${lifecycle.structuring.rationale}`
+        );
+      }
+    } catch (err) {
+      console.error("[alchemy/remittance] lifecycle hooks failed:", err);
+      // Non-fatal — continue with proof submission
+    }
+
     const alreadyInFlight = (await inFlightTxStore.list("proof")).some(
       (e) => e.sourceTxHash?.toLowerCase() === txHash.toLowerCase()
     );
     if (alreadyInFlight) {
-      results.push({ txHash, status: "already_in_flight", borrower: to });
+      results.push({
+        txHash,
+        status: "already_in_flight",
+        borrower: to,
+        weightBps,
+        graduated,
+      });
       continue;
     }
 
@@ -99,19 +132,29 @@ export async function POST(req: NextRequest) {
       });
 
       processed++;
-      results.push({ txHash, status: "proof_sent", borrower: to });
+      results.push({
+        txHash,
+        status: "proof_sent",
+        borrower: to,
+        weightBps,
+        graduated,
+      });
       console.log(
         `[alchemy/remittance] proof sent source=${txHash} onchain=${sent.tx.hash} borrower=${to}`
       );
     } catch (err) {
       if (err instanceof AlreadyRecordedError) {
-        results.push({ txHash, status: "already_recorded", borrower: to });
+        results.push({
+          txHash,
+          status: "already_recorded",
+          borrower: to,
+          weightBps,
+          graduated,
+        });
         continue;
       }
       console.error(`[alchemy/remittance] failed proof for ${txHash}:`, err);
-      results.push({ txHash, status: "error", borrower: to });
-      // Still 200 — permanent failures should not cause Alchemy retries.
-      // Transient cases can be recovered via /api/remittances/verify or a future tick.
+      results.push({ txHash, status: "error", borrower: to, weightBps });
     }
   }
 

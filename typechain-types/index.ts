@@ -44,5 +44,7 @@ export type { RemittanceCreditRegistry } from "./contracts/RemittanceCreditRegis
 export { RemittanceCreditRegistry__factory } from "./factories/contracts/RemittanceCreditRegistry__factory";
 export type { RemittanceMicroLoan } from "./contracts/RemittanceMicroLoan";
 export { RemittanceMicroLoan__factory } from "./factories/contracts/RemittanceMicroLoan__factory";
+export type { SenderValidationAttestation } from "./contracts/SenderValidationAttestation";
+export { SenderValidationAttestation__factory } from "./factories/contracts/SenderValidationAttestation__factory";
 export type { VerifyRelay } from "./contracts/VerifyRelay";
 export { VerifyRelay__factory } from "./factories/contracts/VerifyRelay__factory";

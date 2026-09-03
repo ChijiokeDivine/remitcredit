@@ -8,4 +8,5 @@ export type { mocks };
 export type { CreditDecisionEngine } from "./CreditDecisionEngine";
 export type { RemittanceCreditRegistry } from "./RemittanceCreditRegistry";
 export type { RemittanceMicroLoan } from "./RemittanceMicroLoan";
+export type { SenderValidationAttestation } from "./SenderValidationAttestation";
 export type { VerifyRelay } from "./VerifyRelay";
