@@ -33,9 +33,17 @@ export async function GET(
     };
 
     const client = getReadClient();
-    const stats = await client.getStats(borrower, params.lookbackWindowSeconds);
-    const decision = decideCreditLine(stats, params);
-    const rationale = explainDecision(stats, decision);
+    const rawStats = await client.getStats(borrower, params.lookbackWindowSeconds);
+    const decision = decideCreditLine(rawStats, params);
+    const rationale = explainDecision(rawStats, decision);
+
+    const stats = {
+      transferCount: rawStats.transferCount,
+      totalAmount: rawStats.totalAmount,
+      avgIntervalSeconds: rawStats.avgIntervalSeconds,
+      lastTransferAt: rawStats.lastTimestamp,
+      consistencyBps: rawStats.intervalConsistencyBps,
+    };
 
     return json({ borrower, stats, decision, rationale });
   } catch (err) {

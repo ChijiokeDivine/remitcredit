@@ -178,10 +178,10 @@ export default function DashboardPage() {
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bg-muted"><TrendingUp className="h-4 w-4 text-fg" /></div>
               <div>
                 <CardTitle className="!text-base">Why this limit</CardTitle>
-                <p className="mt-2 text-[15px] leading-relaxed text-fg-secondary">
+                <p className="mt-2 text-[12px] leading-relaxed text-fg-secondary whitespace-pre-line " >
                   {preview?.rationale || "Runs once verified remittances are recorded."}
                 </p>
-                <Link href="/credit" className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-accent transition hover:opacity-70">
+                <Link href="/credit" className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-accent transition hover:opacity-70">
                   Full breakdown <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>

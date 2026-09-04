@@ -71,13 +71,13 @@ function notEligible(rationale: string): CreditDecisionView {
 /// on-chain rationale string so it can be richer without costing gas.
 export function explainDecision(stats: RemittanceStatsView, decision: CreditDecisionView): string[] {
   const lines: string[] = [];
-  lines.push(`${stats.transferCount} verified remittance(s) found in the review window.`);
+  lines.push(`${stats.transferCount} verified remittance(s) found in the review window.\n`);
   if (stats.transferCount > 0) {
-    lines.push(`Total verified inflow: ${stats.totalAmount} (smallest unit).`);
-    lines.push(`Interval consistency score: ${(stats.intervalConsistencyBps / 100).toFixed(1)}%.`);
+    lines.push(`Total verified inflow: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(Number(stats.totalAmount) / 1000000)}.\n`);
+    lines.push(`Interval consistency score: ${(stats.intervalConsistencyBps / 100).toFixed(1)}%.\n`);
   }
   lines.push(decision.eligible
-    ? `Approved for a credit limit of ${decision.creditLimit}, risk score ${(decision.riskScoreBps / 100).toFixed(1)}%.`
-    : `Not currently eligible: ${decision.rationale}`);
+    ? `Approved for a credit limit of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(decision.creditLimit) / 1000000)}, risk score ${(decision.riskScoreBps / 100).toFixed(1)}%.\n`
+    : `Not currently eligible: ${decision.rationale}\n`);
   return lines;
 }

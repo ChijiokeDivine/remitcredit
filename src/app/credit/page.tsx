@@ -15,7 +15,7 @@ import { Gauge, RefreshCw, Info } from "lucide-react";
 const THRESHOLDS = [
   { key: "transferCount", label: "Transfer count", description: "Verified remittances in the lookback window.", target: 3, unit: "" },
   { key: "totalAmount", label: "Total inflow", description: "Cumulative verified amount.", target: 300, unit: "$" },
-  { key: "consistencyBps", label: "Interval consistency", description: "How regular transfers are. Higher is better.", target: 50, unit: "%" },
+  { key: "consistencyBps", label: "Interval consistency", description: "How regular transfers are. Higher is better.", target: 100, unit: "%" },
 ];
 
 export default function CreditPage() {

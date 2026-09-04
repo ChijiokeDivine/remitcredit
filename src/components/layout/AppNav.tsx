@@ -39,17 +39,12 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
         href={href}
         onClick={onNavigate}
         className={cn(
-          "group relative flex items-center gap-2.5 rounded-lg px-3 py-2 my-2 text-sm font-medium transition-colors duration-150",
+          "group relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150",
           // Active item: a subtle accent tint, not a heavy filled pill.
           active ? "bg-accent/10 text-accent" : "text-fg-secondary hover:bg-bg-muted hover:text-fg"
         )}
       >
-        <span
-          className={cn(
-            "absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-accent transition-transform duration-150",
-            active ? "scale-y-100" : "scale-y-0"
-          )}
-        />
+        
         <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
         {label}
       </Link>
