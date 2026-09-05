@@ -48,7 +48,7 @@ export default function LoansPage() {
     setReviewing(true); setError(null); setMsg(null);
     try {
       await requestCreditReview(address);
-      setMsg("Credit review submitted — your limit is now active on-chain.");
+      setMsg("Credit review submitted - your limit is now active on-chain.");
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Review failed.");
@@ -83,7 +83,7 @@ export default function LoansPage() {
       const amountBaseUnits = toUnits(repayAmount);
       // repay() pulls tokens from the borrower's own wallet via
       // transferFrom, which only works once they've personally approved
-      // the loan contract as a spender — that has to be signed by their
+      // the loan contract as a spender - that has to be signed by their
       // wallet, not the relayer, so it happens here before the relayer
       // call that actually records the repayment.
       if (needsApproval(BigInt(amountBaseUnits))) {
@@ -224,7 +224,7 @@ export default function LoansPage() {
                 )}
               </Button>
               {repayStep === "approve" && (
-                <p className="text-xs text-fg-muted">One-time approval — confirm the request in your wallet, then wait for it to confirm on-chain. You won&apos;t need to do this again.</p>
+                <p className="text-xs text-fg-muted">One-time approval - confirm the request in your wallet, then wait for it to confirm on-chain. You won&apos;t need to do this again.</p>
               )}
             </form>
           </Card>

@@ -27,5 +27,5 @@ export function CardTitle({ className, children, ...props }: HTMLAttributes<HTML
   return <h3 className={cn("text-lg font-semibold text-fg md:text-xl", className)} {...props}>{children}</h3>;
 }
 export function CardDescription({ className, children, ...props }: HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn("mt-1 text-sm leading-relaxed text-fg-secondary", className)} {...props}>{children}</p>;
+  return <p className={cn("mt-1 text-xs leading-relaxed text-fg-secondary", className)} {...props}>{children}</p>;
 }

@@ -16,18 +16,18 @@ export default function CompanyPage() {
           <ThemeToggle />
         </nav>
       </header>
-      <section className="mx-auto max-w-3xl px-6 pb-24 pt-32 md:pt-40">
+      <section className="mx-auto max-w-3xl px-6 pb-24 pt-32  md:pt-40">
         <h1 className="font-[family-name:var(--font-serif)] text-4xl font-normal tracking-tight text-fg md:text-5xl">
           Built for the people<br /><span className="italic">credit systems ignore.</span>
         </h1>
         <div className="mt-12 space-y-8 text-[17px] leading-relaxed text-fg-secondary">
-          <p>Millions receive regular support from family abroad — real, recurring income that never shows up on a bank statement or credit file. RemitCredit exists so that history can finally count.</p>
+          <p>Millions receive regular support from family abroad - real, recurring income that never shows up on a bank statement or credit file. RemitCredit exists so that history can finally count.</p>
           <p>We use Creditcoin&apos;s Attestcoin Protocol to cryptographically prove each remittance happened, then feed that verified record into a transparent decision engine. No screenshots. No centralized oracle. No human underwriter.</p>
-          <p>Creditcoin launched in 2017 as on-chain credit infrastructure for emerging-market micro-lending. RemitCredit extends that mission with a new income signal — crypto remittances — that wasn&apos;t verifiable until Attestcoin shipped.</p>
+          <p>Creditcoin launched in 2017 as on-chain credit infrastructure for emerging-market micro-lending. RemitCredit extends that mission with a new income signal - crypto remittances - that wasn&apos;t verifiable until Attestcoin shipped.</p>
           <p>Built for BUIDL CTC 2026 Fall (AI track). The &quot;AI&quot; is an autonomous agent: it acts on freshly verified cross-chain data with zero human review. The scoring itself is deterministic and auditable by design.</p>
         </div>
       </section>
-      <Footer />
+  
     </main>
   );
 }

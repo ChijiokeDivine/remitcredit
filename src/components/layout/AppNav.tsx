@@ -7,7 +7,7 @@ import { useWallet } from "@/lib/wallet";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import { shortAddress, cn } from "@/lib/utils";
-import { LayoutDashboard, History, Gauge, Banknote, Activity, Users, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, History, Gauge, Banknote, Activity, Users, LogOut, Menu, X, Presentation } from "lucide-react";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -15,6 +15,8 @@ const NAV = [
   { href: "/credit", label: "Credit", icon: Gauge },
   { href: "/loans", label: "Loans", icon: Banknote },
   { href: "/activity", label: "Activity", icon: Activity },
+  { href: "/demo", label: "Demo", icon: Presentation },
+
 ];
 
 const NAV_SECONDARY = [{ href: "/onboarding", label: "Senders", icon: Users }];

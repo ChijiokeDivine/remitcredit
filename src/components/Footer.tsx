@@ -6,8 +6,8 @@ import { Flower2 } from "lucide-react";
 const FOOTER_LINKS = [
   { label: "Product", href: "/demo" },
   { label: "Privacy", href: "/privacy" },
-  { label: "Terms", href: "/terms" },
-  { label: "Contact", href: "/contact" },
+  { label: "Company", href: "/company" },
+  { label: "API", href: "/docs/api" },
 ];
 
 export default function Footer() {
