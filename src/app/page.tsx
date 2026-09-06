@@ -131,13 +131,13 @@ export default function Home() {
         {/* Hero content */}
         <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center">
           <h1 className="font-[family-name:var(--font-serif)] text-[38px] font-normal leading-[1.05] tracking-[-0.01em] text-white sm:text-[52px] md:text-[56px] lg:text-[60px]">
-            Your remittances
+            Turn your onchain 
             <br />
-            <span className="italic">are real income.</span>
+            <span className="italic">history into credit.</span>
           </h1>
 
           <p className="mt-7 text-sm font-medium text-white md:mt-8 md:text-md">
-          Now they unlock real credit.
+          RemitCredit turns verified onchain remittance history into a credit line, <br/>so you can borrow based on your onchain history.
           </p>
 
           {/* <div className="mt-4">
