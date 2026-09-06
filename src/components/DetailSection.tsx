@@ -8,7 +8,7 @@ export default function DetailSection() {
         {/* Image */}
         <div className="relative min-h-[280px] md:min-h-[520px] overflow-hidden rounded-[20px] lg:min-h-[calc(100vh-80px)]">
           <Image
-            src="/image_3.webp"
+            src="/image_4.webp"
             alt="Friends enjoying a meal together outdoors"
             fill
             priority

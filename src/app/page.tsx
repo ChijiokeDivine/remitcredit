@@ -137,7 +137,7 @@ export default function Home() {
           </h1>
 
           <p className="mt-7 text-sm font-medium text-white md:mt-8 md:text-md">
-          RemitCredit turns verified onchain remittance history into a credit line, <br/>so you can borrow based on your onchain history.
+            RemitCredit turns verified onchain remittance history into a credit line, <br/>so you can borrow based on your onchain history.
           </p>
 
           {/* <div className="mt-4">
