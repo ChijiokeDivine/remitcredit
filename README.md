@@ -1,4 +1,6 @@
-# RemitCredit
+<h1 align="center">
+  RemitCredit
+</h1>
 
 ### Turn verified remittance history into access to credit.
 
@@ -9,15 +11,21 @@ A borrower's recurring remittance activity is monitored on **Ethereum Sepolia**,
 Built for the **Creditcoin hackathon** — but the plumbing underneath is production-grade.
 
 ---
+<br />
+<br />
+<h2 align="center" >
+ 🎥 Product Demo
+</h2>
 
-## 🎥 Product Demo
 
 > Watch the 3-minute walkthrough: **remittance → verify → approve → fund → repay** — the whole loop on real testnets.
 
 <img width="1920" height="1080" alt="image (1)" src="https://github.com/user-attachments/assets/fd109a66-d559-4068-8bc2-7ad3a232ab2b" />
-
-**Short clip: Attestcoin verification in real time**
-
+<br />
+<br />
+<h3>Short clip: Attestcoin verification in real time</h3>
+<br />
+<br />
 <img width="1920" height="1080" alt="image (2)" src="https://github.com/user-attachments/assets/6fc8de14-9397-4b8b-b1ad-f1a4996fd85c" />
 
 ---
@@ -28,23 +36,26 @@ Built for the **Creditcoin hackathon** — but the plumbing underneath is produc
 
 <div>
 <figure>
-  <img src="/image_1.webp" alt="RemitCredit Dashboard" style="border-radius: 12px; border: 1px solid #e5e7eb;" />
-  <figcaption align="center"><em>Dashboard: credit decision, risk score, and pool status at a glance.</em></figcaption>
+  <img width="1920" height="1080" alt="image (4)" src="https://github.com/user-attachments/assets/18507b3e-c9d8-4127-be98-3839603e8eac" />
+  <p align="center"><em>Onboarding: add or remove senders. Senders are wallets that send to you.</em></p>
 </figure>
+  <br />
 </div>
 
 <div>
 <figure>
-  <img src="/image_2.webp" alt="Verified Remittances Feed" style="border-radius: 12px; border: 1px solid #e5e7eb;" />
-  <figcaption align="center"><em>Verified remittances feed — every row is proven on-chain via Attestcoin.</em></figcaption>
+  <img width="1920" height="1080" alt="image (3)" src="https://github.com/user-attachments/assets/bc13c28c-b075-48cf-b464-a2fb93120453" />
+  <p align="center"><em>Verified remittances feed — every row is proven on-chain via Attestcoin.</em></p>
 </figure>
+  <br />
 </div>
 
 <div>
 <figure>
-  <img src="/image_4.webp" alt="Credit Decision Breakdown" style="border-radius: 12px; border: 1px solid #e5e7eb;" />
-  <figcaption align="center"><em>Credit decision breakdown: transfer count, total inflow, and interval consistency — all auditable.</em></figcaption>
+  <img width="1920" height="1080" alt="image (3)" src="https://github.com/user-attachments/assets/233df715-a3f8-4e7e-a94a-4294deaed480" />
+  <p align="center"><em>Credit decision breakdown: transfer count, total inflow, and interval consistency — all auditable.</em></p>
 </figure>
+  <br />
 </div>
 
 </div>
@@ -53,7 +64,7 @@ Built for the **Creditcoin hackathon** — but the plumbing underneath is produc
 
 ## 💡 The Problem
 
-2.2 billion unbanked and underbanked adults send **$700+ billion a year in remittances** across borders. These are among the most financially consistent people on Earth — yet most have:
+2.2 billion unbanked and underbanked adults send **$700+ billion a year in remittances** across borders. These are among the most financially consistent people on Earth - yet most have:
 
 - ❌ No traditional credit score
 - ❌ No banking relationship history
