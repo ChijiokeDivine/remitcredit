@@ -14,19 +14,11 @@ Built for the **Creditcoin hackathon** — but the plumbing underneath is produc
 
 > Watch the 3-minute walkthrough: **remittance → verify → approve → fund → repay** — the whole loop on real testnets.
 
-<video width="100%" controls poster="public/image_web.webp">
-  <source src="/videos/9198272-hd_1920_1080_25fps.mp4" type="video/mp4" />
-  Your browser does not support the video tag.
-  <a href="/videos/9198272-hd_1920_1080_25fps.mp4">▶ Download demo video</a>
-</video>
+<img width="1920" height="1080" alt="image (1)" src="https://github.com/user-attachments/assets/fd109a66-d559-4068-8bc2-7ad3a232ab2b" />
 
 **Short clip: Attestcoin verification in real time**
 
-<video width="100%" controls poster="public/image_attest.webp">
-  <source src="/videos/4492649-hd_1280_720_50fps.mp4" type="video/mp4" />
-  Your browser does not support the video tag.
-  <a href="/videos/4492649-hd_1280_720_50fps.mp4">▶ Watch verification clip</a>
-</video>
+<img width="1920" height="1080" alt="image (2)" src="https://github.com/user-attachments/assets/6fc8de14-9397-4b8b-b1ad-f1a4996fd85c" />
 
 ---
 
