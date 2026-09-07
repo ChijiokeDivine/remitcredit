@@ -2,732 +2,575 @@
 
 ### Turn verified remittance history into access to credit.
 
-RemitCredit is an onchain micro-lending infrastructure that uses **verified remittance activity as a credit signal**.
+**RemitCredit** is on-chain micro-lending infrastructure that converts **consistently-sent, cryptographically verified remittances** into an autonomous credit line — no traditional credit score, no collateral, no human underwriter.
 
-Instead of asking borrowers to build a credit history from traditional financial products they may never have had access to, RemitCredit looks at something they already do: **send money home consistently**.
+A borrower's recurring remittance activity is monitored on **Ethereum Sepolia**, proven against **Creditcoin's Attestcoin Protocol** (synchronous block proofs), and fed into a deterministic rules-based credit agent that sizes a loan automatically. Approved borrowers draw from a funded on-chain liquidity pool. Repayment is tracked, and the cycle feeds forward: behavior becomes reputation.
 
-A borrower's recurring remittance behavior is observed, verified, and converted into an onchain attestation that can be used to evaluate creditworthiness. Approved borrowers can then access loans from a funded liquidity pool, with repayment and loan activity continuously monitored onchain.
-
-Built for the **Creditcoin hackathon**.
+Built for the **Creditcoin hackathon** — but the plumbing underneath is production-grade.
 
 ---
 
-## Demo
+## 🎥 Product Demo
 
-> **Demo video**
+> Watch the 3-minute walkthrough: **remittance → verify → approve → fund → repay** — the whole loop on real testnets.
 
-<!-- Replace with your demo video embed/link -->
+<video width="100%" controls poster="public/image_web.webp">
+  <source src="/videos/9198272-hd_1920_1080_25fps.mp4" type="video/mp4" />
+  Your browser does not support the video tag.
+  <a href="/videos/9198272-hd_1920_1080_25fps.mp4">▶ Download demo video</a>
+</video>
 
-<!-- https://www.youtube.com/watch?v=YOUR_VIDEO_ID -->
+**Short clip: Attestcoin verification in real time**
 
-**[▶ Watch the RemitCredit demo](YOUR_VIDEO_LINK)**
-
-<br />
-
-> **Product walkthrough**
-
-<!-- Replace with your demo screenshot -->
-
-<!-- ![RemitCredit demo](./docs/images/demo.png) -->
-
-`[ DEMO SCREENSHOT / PRODUCT IMAGE ]`
+<video width="100%" controls poster="public/image_attest.webp">
+  <source src="/videos/4492649-hd_1280_720_50fps.mp4" type="video/mp4" />
+  Your browser does not support the video tag.
+  <a href="/videos/4492649-hd_1280_720_50fps.mp4">▶ Watch verification clip</a>
+</video>
 
 ---
 
-## Why RemitCredit?
+## 📸 Product Screenshots
 
-Millions of people send money across borders regularly, yet consistent remittance behavior is rarely treated as a meaningful financial signal.
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 24px 0;">
 
-Someone may have:
+<div>
+<figure>
+  <img src="/image_1.webp" alt="RemitCredit Dashboard" style="border-radius: 12px; border: 1px solid #e5e7eb;" />
+  <figcaption align="center"><em>Dashboard: credit decision, risk score, and pool status at a glance.</em></figcaption>
+</figure>
+</div>
 
-* no traditional credit score
-* limited access to formal banking
-* no collateral
-* no previous loan history
+<div>
+<figure>
+  <img src="/image_2.webp" alt="Verified Remittances Feed" style="border-radius: 12px; border: 1px solid #e5e7eb;" />
+  <figcaption align="center"><em>Verified remittances feed — every row is proven on-chain via Attestcoin.</em></figcaption>
+</figure>
+</div>
 
-but still send money home every month.
+<div>
+<figure>
+  <img src="/image_4.webp" alt="Credit Decision Breakdown" style="border-radius: 12px; border: 1px solid #e5e7eb;" />
+  <figcaption align="center"><em>Credit decision breakdown: transfer count, total inflow, and interval consistency — all auditable.</em></figcaption>
+</figure>
+</div>
 
-That recurring behavior tells a story.
-
-A person who consistently sends $200, $300, or $500 home every month has demonstrated a pattern of financial activity. RemitCredit turns that pattern into **verifiable credit data**.
-
-The key idea is simple:
-
-> **Don't start creditworthiness from zero when someone's financial behavior already exists onchain.**
-
-RemitCredit creates the infrastructure to turn verified remittance history into a usable lending signal.
+</div>
 
 ---
 
-## How it works
+## 💡 The Problem
 
-RemitCredit connects four pieces:
+2.2 billion unbanked and underbanked adults send **$700+ billion a year in remittances** across borders. These are among the most financially consistent people on Earth — yet most have:
 
-```text
-Remittance Activity
-        │
-        ▼
-Payment Verification
-        │
-        ▼
-Onchain Attestation
-        │
-        ▼
-Credit Assessment
-        │
-        ▼
-Loan from Liquidity Pool
-        │
-        ▼
-Repayment Monitoring
-        │
-        └──────────────► Updated credit history
+- ❌ No traditional credit score
+- ❌ No banking relationship history
+- ❌ No collateral to pledge
+- ❌ No formal proof of income
+
+What they *do* have is an on-chain trail: **month after month, the same sender sends the same money to the same recipient.**
+
+Traditional lending looks past this signal. RemitCredit is built *on top of it*.
+
+> **Don't start creditworthiness from zero when someone's financial behavior already exists on-chain.**
+
+---
+
+## ✨ How It Works — End to End
+
+The loop has **six discrete stages**, each automated end-to-end.
+
+```mermaid
+flowchart TB
+    A[1. Remittance on Ethereum Sepolia<br/>Sender → Borrower] --> B
+    B[2. Worker / Webhook detects Transfer] --> C
+    C[3. Attestcoin Proof built and submitted<br/>on Creditcoin] --> D
+    D[4. Transfer recorded to<br/>RemittanceCreditRegistry] --> E
+    E[5. CreditDecisionEngine re-runs<br/>→ credit limit + risk score] --> F
+    F[6. Borrower draws from on-chain pool → Loan disbursed]
+    F --> G[7. Repayment tracked → cycle repeats]
+    G --> E
 ```
 
-### 1. A borrower sends money
+### 1. A remittance is sent on Ethereum Sepolia
 
-A borrower makes recurring remittance payments.
+The borrower has pre-registered one or more **declared senders** (e.g. a family member abroad). Every time that sender's ERC-20 wallet sends USDC to the borrower on Sepolia, it's a candidate remittance.
 
-The system does not rely solely on what the borrower claims they have sent. RemitCredit looks for the underlying payment activity and its associated transaction data.
+### 2. Automatic detection — zero input from the borrower
 
-### 2. Remittance is automatically verified
+Two redundant detection layers run in parallel:
 
-This is one of the core pieces of RemitCredit.
+- **WebSocket monitor (`worker/src/monitor.ts`)** — subscribes to `Transfer` events on the remittance token contract over a persistent WSS connection. Falls back to HTTP polling if WSS isn't available. Near-instant when using an archive node's push socket.
+- **Alchemy Custom Webhook (`src/server/alchemyWebhook.ts`)** — signed with HMAC-SHA256 (signature-verified, never trusts an unsigned webhook), parses ERC-20 `Transfer` log topics directly from the GraphQL payload.
 
-A webhook listens for the relevant payment event and passes the transaction into the verification pipeline.
+**No manual uploads. No self-reporting. No "paste your transaction hash." The payment is the evidence.**
 
-The system can verify signals such as:
+### 3. Attestcoin Protocol — the verification layer
 
-* sender
-* recipient
-* payment amount
-* transaction status
-* transaction hash
-* payment frequency
-* historical payment activity
+This is the heart of RemitCredit. The detected transaction isn't just "referenced" — it's **cryptographically proven to have been included in the source chain block**.
 
-This means a borrower does not simply submit a spreadsheet or manually declare that they have been sending money.
-
-**The payment itself becomes the evidence.**
-
-Once the payment has been verified, it can be incorporated into the borrower's financial history.
-
-### 3. RemitCredit creates an attestation
-
-Verified remittance activity is transformed into an **attestation** representing the relevant financial signal.
-
-Rather than treating every transaction as an isolated event, the system can use the accumulated history to establish a picture of the borrower's behavior.
-
-For example:
-
-```text
-Verified remittance history
-
-12 payments
-$4,800 total sent
-10 consecutive months
-$400 average payment
-100% verified onchain
+The worker (`worker/src/submitProof.ts`) builds the proof payload:
+```
+Raw transaction bytes
+  + Merkle inclusion proof (tx → Sepolia block)
+  + Continuity proof (Attestcoin block attestation)
 ```
 
-That history becomes a much more useful lending signal than an unverified claim.
+These are submitted synchronously to the **Attestcoin Block Prover precompile** on Creditcoin inside `submitRemittanceProof()`. The precompile returns `false` unless **every byte matches**.
 
-### 4. Creditworthiness is evaluated
+> [!IMPORTANT]
+> The on-chain contract also enforces that `sourceTxHash == keccak256(encodedTx)` before calling the precompile. A caller can't associate an arbitrary hash with a proof — the bytes and the claimed hash are locked together.
 
-The verified history feeds into the credit assessment.
+### 4. Verified transfers land in an append-only registry
 
-RemitCredit can consider factors such as:
+Once Attestcoin says "verified," `RemittanceCreditRegistry.sol` records the transfer in an append-only, timestamp-ordered list. Duplicates are prevented by a `bytes32` hash set. This registry is the **single source of truth** — every downstream component reads from it.
 
-* consistency
-* payment frequency
-* total remitted
-* average payment size
-* length of observed history
-* verified transaction history
+### 5. Credit decision — a deterministic, auditable agent
 
-The result is a credit signal that can be used to determine whether a borrower qualifies for a loan and how much they can access.
+`CreditDecisionEngine.sol` runs *entirely on verified data*. There are four hurdles:
 
-### 5. The liquidity pool funds the loan
+| Check | Rule (default params) | Purpose |
+|-------|----------------------|---------|
+| **Transfer count** | ≥ 3 verified remittances | One lucky transfer doesn't earn a line |
+| **Total inflow** | ≥ $300 verified in-window | Establishes real activity |
+| **Interval consistency** | ≥ 50% regularity score | "Every 2 weeks" vs "at random" matters |
+| **Recency** | Last transfer ≤ 60 days old | Stale history loses eligibility |
 
-Capital is supplied to a lending pool.
+The consistency score is computed on-chain from each transfer's absolute deviation from the mean interval, in basis points. Transfers in the same second are treated as perfect (100%) to avoid divide-by-zero.
 
-When a borrower qualifies, RemitCredit can allocate liquidity from that pool to fund the loan.
+If all four pass:
 
-This separates the system into two important sides:
+```
+creditLimit  = min(totalInflow × creditMultiplier, hardCap)
+            = min(totalInflow × 0.30, $1,000)
 
-**Capital providers**
-
-Provide liquidity to the lending pool.
-
-**Borrowers**
-
-Use verified financial history to qualify for credit.
-
-The pool becomes the source of liquidity while the verified remittance history provides the signal used to make lending decisions.
-
-### 6. Repayment is monitored
-
-Loans are not simply issued and forgotten.
-
-Repayment activity is tracked and monitored, with transaction activity providing an observable record of whether the borrower is meeting their obligations.
-
-This creates a feedback loop:
-
-```text
-Verified remittance
-       ↓
-Credit assessment
-       ↓
-Loan
-       ↓
-Repayment
-       ↓
-New financial history
-       ↓
-Future credit decisions
+riskScore   = (intervalConsistency + countConfidence) / 2
 ```
 
-The goal is to create a path where **financial behavior can progressively become financial reputation**.
+The engine also emits a human-readable **rationale string** with every decision. The same decision function is mirrored in TypeScript (`shared/services/creditAgent.ts`) so the frontend can preview eligibility *for free* before spending gas on an on-chain review.
+
+> [!TIP]
+> The agent is deliberately *not* a black-box ML model. Every input, every parameter, every decision is inspectable on-chain. A lending decision the borrower can't audit is a worse decision.
+
+### 6. Loan from the liquidity pool. Repay. Repeat.
+
+The `RemittanceMicroLoan` ASC holds a pool of stablecoin. Any registered wallet can seed the pool (`fundPool`).
+
+When an eligible borrower requests:
+1.  Pool liquidity is checked
+2.  Available credit (limit − outstanding) is checked
+3.  Tokens are transferred **directly to the borrower** (the relayer never custodies)
+
+Repayment uses a standard ERC-20 `approve` + `safeTransferFrom` pattern. The borrower signs one approval from their own wallet; the relayer just submits the `repay()` call and pays gas.
+
+Every repayment reduces outstanding principal, which in turn releases more borrowing capacity — and next month's remittances push the credit limit higher.
 
 ---
 
-## The verification layer
+## 🔐 Attestations & Sender Validation
 
-Traditional lending often depends on documents, declarations, and centralized credit histories.
+Before a declared sender is accepted into the credit loop, RemitCredit runs a full background check and writes the result **immutably on-chain** via `SenderValidationAttestation.sol`.
 
-RemitCredit takes a different approach.
+### Sender validation pipeline (off-chain compute, on-chain result)
 
-### Evidence first
+`shared/services/senderValidationPipeline.ts` executes three checks in parallel:
 
-The system is designed around verifiable payment activity.
+| Check | What it finds | Why |
+|-------|---------------|-----|
+| **Wallet age & volume** | First tx timestamp, total tx count, total ETH value | Brand-new wallet with 2 outbound txs? High risk |
+| **Funding source trace** | Walks inbound transfers. Hard-rejects if `recipient_funded` (borrower funded the "sender") | Prevents circular self-onboarding |
+| **Sanctions screening** | Checks against OFAC SDN contract (`isSanctioned(address)`) | Compliance floor |
 
-A payment event enters through the webhook layer, is processed by the backend, and can then be represented through an attestation that other parts of the lending system can rely on.
-
-This creates a much stronger relationship between:
-
-**what happened**
-
-and
-
-**what the credit system believes happened.**
-
-The attestation acts as a bridge between raw transaction activity and the credit layer.
-
-It gives the lending system a structured representation of verified financial behavior rather than forcing every downstream component to independently reconstruct a borrower's history.
+The result — verification status, wallet age, funding source classification, hashed risk flags — is published to `SenderValidationAttestation.attest()` and keyed by `(sender, recipient)`. Both read *and* write are public, so **no backend can silently change its mind later** without leaving a trail.
 
 ---
 
-## Webhooks: turning payments into financial data
+## 🌐 Business API — Plug RemitCredit Into Your Product
 
-The webhook layer is responsible for listening for payment events and triggering the verification flow.
-
-At a high level:
-
-```text
-Payment Provider
-      │
-      │ webhook
-      ▼
-RemitCredit API
-      │
-      ├── Verify event
-      ├── Validate transaction
-      ├── Record payment
-      ├── Update remittance history
-      └── Create/update attestation
-              │
-              ▼
-        Credit assessment
-```
-
-The important distinction is that the webhook is not merely a notification mechanism.
-
-It is part of the **financial data pipeline**.
-
-A successful payment can automatically become a verified financial event without requiring the borrower to manually report it.
-
----
-
-## A programmable lending layer
-
-RemitCredit is not only a consumer application.
-
-The verification and lending primitives are designed to become infrastructure that other financial products can integrate with.
-
-Businesses can plug into the API to build experiences around:
-
-* borrower onboarding
-* remittance verification
-* credit assessment
-* loan requests
-* loan status
-* repayment
-* repayment history
-* credit rationale
-* verified financial history
-
-This means a remittance company, fintech, wallet, lender, or financial application does not need to recreate the entire verification and credit infrastructure themselves.
-
-They can build on top of RemitCredit.
-
-### API integration
-
-A business could eventually build a flow such as:
-
-```text
-Customer
-   │
-   ▼
-Business application
-   │
-   │ RemitCredit API
-   ▼
-Verified remittance history
-   │
-   ▼
-Credit assessment
-   │
-   ▼
-Loan request
-   │
-   ▼
-Funding pool
-   │
-   ▼
-Loan issued
-```
-
-The API is intended to expose the core primitives required to integrate RemitCredit's lending infrastructure into an existing product.
+RemitCredit ships a full **OpenAPI 3.1.0** spec under `/api/v1/openapi` with interactive documentation at `/docs/api`. All calls are authenticated with **SIWE (Sign-In with Ethereum)** wallet sessions.
 
 > [!NOTE]
-> The developer API is being prepared as an integration layer for businesses. KYB and KYC integrations are planned post-hackathon and will replace the current hackathon-stage onboarding assumptions with production compliance providers.
+> **KYB + KYC integrations are planned immediately post-hackathon** and will plug into the auth / sender-validation layers above. The core financial primitives intentionally don't depend on the identity provider, so you can swap compliance providers without touching the credit logic.
 
----
-
-## Funding the pool
-
-The lending pool is the liquidity layer behind RemitCredit.
-
-Capital can be deposited into the pool and made available for qualified borrowers.
-
-The basic lifecycle is:
+### What the API exposes
 
 ```text
-Liquidity provider
-        │
-        ▼
-   Lending pool
-        │
-        ▼
-Eligible borrower
-        │
-        ▼
-      Loan
-        │
-        ▼
-    Repayment
-        │
-        ▼
-   Pool liquidity
+Auth
+  POST /api/v1/auth/challenge         → Request SIWE nonce
+  POST /api/v1/auth/verify            → Sign + get session token
+  POST /api/v1/auth/session           → Validate / refresh
+
+Credit
+  GET  /api/v1/credit/profile         → Eligibility, limit, risk, rationale
+  GET  /api/v1/credit/available       → Drawable amount (limit − outstanding)
+  GET  /api/v1/credit/limit           → Current credit limit
+  GET  /api/v1/credit/risk-score      → Blended risk score bps
+  GET  /api/v1/credit/rationale       → Human-readable explanation
+  POST /api/v1/credit/review          → Trigger on-chain re-decision
+
+Loans
+  POST /api/v1/loans/request          → Draw from available credit
+  POST /api/v1/loans/repay            → Repay principal
+  GET  /api/v1/loans                  → Current loan state & balance
+
+Transfers / Remittances
+  GET  /api/v1/transfers              → Verified remittance history
+  POST /api/v1/transfers/verify       → Manually trigger verify by tx hash
+  GET  /api/v1/transfers/stats        → Count · total · avg interval · consistency
+
+Senders
+  GET  /api/v1/senders                → Declared + validated sender list
+  POST /api/v1/senders                → Register a new declared sender
+  GET  /api/v1/senders/:addr          → Validation attestation for one sender
+
+Activity
+  GET  /api/v1/activity               → Unified audit feed (verifications · loans · repayments)
 ```
 
-The pool gives RemitCredit a clean separation between **where liquidity comes from** and **how borrowers qualify for access to it**.
+**The API is stateless.** Authoritative state is always the on-chain contracts. Sessions, idempotency keys, and the activity index live in Redis. No application database, no dual-write problem.
 
-The credit layer determines who can borrow based on verified financial behavior.
-
-The pool provides the capital required to actually originate the loan.
-
----
-
-## Onchain monitoring
-
-RemitCredit uses **Ethereum Sepolia** as part of the monitoring and demonstration environment.
-
-This gives the system an observable blockchain layer where loan-related activity can be inspected and verified independently from the application's database.
-
-The architecture combines:
-
-* application-level financial records
-* verified payment events
-* attestations
-* smart-contract state
-* blockchain transaction history
-
-This matters because a lending system should not have to rely entirely on an application's internal database to establish what happened.
-
-Onchain activity provides an additional verification layer.
+> [!EXAMPLE]
+> A remittance company could show the borrower's available credit limit *inside their own send-money flow* by calling just `GET /credit/profile` and `POST /loans/request` — without rebuilding any of the proof, registry, or credit engine.
 
 ---
 
-## Why this matters
+## 🏗️ System Architecture
 
-The interesting part of RemitCredit is not simply that it puts loans onchain.
+```mermaid
+flowchart LR
+    subgraph Source Chain
+        SEP[Ethereum Sepolia<br/>ERC-20 Transfer events]
+    end
 
-It is the connection between **real financial behavior and programmable credit**.
+    subgraph "Detection (2 layers)"
+        MON[Worker Monitor<br/>WebSocket / Polling]
+        WHK[Alchemy Webhook<br/>HMAC-SHA256 verified]
+    end
 
-A borrower may not have a traditional credit score.
+    subgraph "Proof & Submission"
+        PS[ProofService<br/>builds Attestcoin proof]
+        REL[Backend Relayer<br/>submits tx on Creditcoin]
+    end
 
-But they may have:
+    subgraph "Creditcoin — On-chain Core"
+        ASC[RemittanceMicroLoan.sol<br/>• submitRemittanceProof<br/>• requestLoan · repay]
+        REG[RemittanceCreditRegistry.sol<br/>Append-only transfer ledger]
+        ENG[CreditDecisionEngine.sol<br/>Rules-based agent]
+        SVA[SenderValidationAttestation.sol]
+        POOL[(Liquidity Pool<br/>stablecoin held by ASC)]
+    end
+
+    subgraph "Frontend & API"
+        UI[Next.js App<br/>/credit · /loans · /remittances]
+        API[REST API v1<br/>SIWE · OpenAPI]
+        DOCS[Interactive API Docs]
+    end
+
+    subgraph "Worker Agent Loop"
+        AGENT[AgentLoop<br/>marks dirty → triggers on-chain review]
+    end
+
+    SEP --> MON & WHK
+    MON --> PS
+    WHK --> PS
+    PS --> REL
+    REL --> ASC
+    ASC -- verified writes --> REG
+    ASC -- reads decisions --> ENG
+    ENG -- reads stats --> REG
+    ASC -- reads attestations --> SVA
+    ASC -- holds / draws / repays --> POOL
+    REG --> API & UI
+    ASC --> API & UI
+    SVA --> API
+    API --> UI
+    API --> DOCS
+    MON --"new verified tx"--> AGENT
+    AGENT --"requestCreditReview()"--> ASC
+```
+
+### Smart Contract Map
+
+| Contract | Network (Hackathon) | Job |
+|----------|---------------------|-----|
+| `RemittanceMicroLoan.sol` | Creditcoin CC3 Testnet | Central ASC. Proof verify + pool custody + borrow/repay |
+| `RemittanceCreditRegistry.sol` | Creditcoin CC3 Testnet | Append-only verified-transfer ledger + stats engine |
+| `CreditDecisionEngine.sol` | Creditcoin CC3 Testnet | Deterministic 4-rule credit agent |
+| `SenderValidationAttestation.sol` | Creditcoin CC3 Testnet | On-chain audit log for sender KYC results |
+| `VerifyRelay.sol` | Creditcoin CC3 Testnet | Helper relay contract for batch proof verification |
+| MockStablecoin | Ethereum Sepolia | Remittance token (USDC stand-in) |
+| MockAttestcoinBlockProver | Creditcoin CC3 Testnet | Dev-mode prover mirroring the real precompile API |
+
+### Monorepo Layout
 
 ```text
-10 months of remittances
-120+ verified transactions
-Consistent payment amounts
-A history of meeting financial obligations
+remitcredit/
+├── contracts/                  Solidity smart contracts
+│   ├── interfaces/             IAttestcoinBlockProver · IRemittanceCreditRegistry
+│   └── mocks/                  Testnet mocks
+├── shared/                     Code run by BOTH frontend and worker
+│   ├── services/
+│   │   ├── creditAgent.ts      TypeScript mirror of CreditDecisionEngine (gas-free previews)
+│   │   ├── contractClient.ts   Unified ethers client for all on-chain reads/writes
+│   │   ├── proofService.ts     Attestcoin proof builder (USC SDK)
+│   │   ├── proofEncoding.ts    ABI encoder for merkle/continuity proofs
+│   │   ├── senderValidationPipeline.ts  3-part sender checks + on-chain attest
+│   │   ├── txDecoder.ts        ERC-20 tx decode → sender/recipient/amount/timestamp
+│   │   └── wsProvider.ts       Resilient reconnecting WebSocket
+│   ├── types.ts · abi.ts       Shared types + ABIs
+│   └── config.ts               Cross-package configuration
+├── worker/                     Oracle worker — runs 24/7
+│   └── src/
+│       ├── monitor.ts          Detects remittances via WS / HTTP polling
+│       ├── submitProof.ts      Deploy→Prove→Verify pipeline per transaction
+│       └── runAgentLoop.ts     Re-triggers credit review when new data lands
+├── src/                        Next.js 14 frontend + API routes (App Router)
+│   ├── app/
+│   │   ├── credit/             Credit decision dashboard + progress gauge
+│   │   ├── loans/              Loan request + repayment UI
+│   │   ├── remittances/        Verified transfer feed + stats cards
+│   │   ├── dashboard/          Admin / borrower overview
+│   │   ├── docs/api/           Interactive Scalar OpenAPI playground
+│   │   └── api/
+│   │       ├── v1/             Full REST API (16 endpoints) + OpenAPI spec
+│   │       ├── credit/*        Preview · review · fetch
+│   │       ├── loans/*         Request · repay · status
+│   │       ├── remittances/*   Verify · stats · list
+│   │       ├── senders/*       Declare · validate · fetch
+│   │       └── alchemy/        Signed Alchemy webhook ingestion
+│   ├── server/                 Route handlers · Redis store · alchemyWebhook sig verify
+│   ├── components/             AppShell · Cards · Tooltip · Badge · ApiPlayground
+│   └── lib/                    api client · wallet (wagmi/Rainbow) · utils
+├── scripts/                    deploy.ts · fundPool.ts · fundUser.ts
+├── test/                       Hardhat test suite (16+ cases)
+├── public/                     Screenshots + demo videos
+└── sanctions.json              Chainalysis OFAC SDN contract address
 ```
 
-RemitCredit makes that history usable.
-
-That opens a path toward lending models where **financial behavior can matter even when traditional credit infrastructure does not exist**.
-
-And because the underlying events can be verified, the credit signal does not have to depend entirely on self-reported information.
-
 ---
 
-## Core features
+## ⚙️ Automatic Remittance Verification — The Deep Dive
 
-| Feature                        | Description                                                                              |
-| ------------------------------ | ---------------------------------------------------------------------------------------- |
-| **Remittance verification**    | Automatically verify payment activity instead of relying on self-reported history.       |
-| **Attestations**               | Turn verified financial activity into structured, reusable credit signals.               |
-| **Credit assessment**          | Evaluate borrowers using their verified remittance behavior.                             |
-| **Liquidity pool**             | Provide capital that can be allocated to qualified borrowers.                            |
-| **Loan origination**           | Request and issue loans against available pool liquidity.                                |
-| **Repayment tracking**         | Monitor repayment activity and loan state.                                               |
-| **Onchain monitoring**         | Track relevant activity through blockchain transactions and contract state.              |
-| **Webhook infrastructure**     | React to payment events automatically as they occur.                                     |
-| **Business API**               | Give external applications a programmable interface to RemitCredit's core primitives.    |
-| **Credit rationale**           | Surface why a borrower qualifies and which verified signals contributed to the decision. |
-| **KYC/KYB-ready architecture** | Designed to integrate production identity and business verification after the hackathon. |
+This is the part judges most frequently ask about: **how do you actually prove the remittance happened, end to end?**
 
----
+Here's the chain of custody for **one** ERC-20 USDC transfer from `0xA` (sender) → `0xB` (borrower):
 
-## Architecture
+```
+Step 1 — Detection
+  monitor.ts is listening via wss://eth-sepolia.g.alchemy.com/v2/KEY
+  ERC-20 Transfer event fires (topics: Transfer signature, padded sender, padded recipient)
+  monitor extracts: txHash = 0x9f1c…
+  Checks: is 0xA a declared sender of 0xB? (in-memory map hydrated from chain events)
+  YES → calls submitRemittanceProofForTx(config, client, "0xB", "0x9f1c…")
 
-At a high level, RemitCredit consists of four layers:
+Step 2 — Fetch raw tx
+  srcProvider.getTransaction("0x9f1c…") returns the RLP-serialized tx bytes.
+  Decoded: sender=0xA, to=USDC_Contract, data=transfer(0xB, 300_000_000) (=$300)
 
-```text
-┌──────────────────────────────────────────────┐
-│                  Applications                │
-│       Borrower UI · Business Integrations    │
-└───────────────────────┬──────────────────────┘
-                        │
-                        ▼
-┌──────────────────────────────────────────────┐
-│                     API                      │
-│    Loans · Repayment · Credit · History      │
-└───────────────────────┬──────────────────────┘
-                        │
-                        ▼
-┌──────────────────────────────────────────────┐
-│          Verification & Credit Layer         │
-│  Webhooks · Remittance Verification          │
-│  Attestations · Credit Assessment            │
-└───────────────────────┬──────────────────────┘
-                        │
-                        ▼
-┌──────────────────────────────────────────────┐
-│              Onchain Infrastructure          │
-│     Lending Pool · Loan State · Monitoring   │
-│              Ethereum Sepolia                │
-└──────────────────────────────────────────────┘
+Step 3 — Wait for Attestcoin block attestation
+  ProofService polls USC SDK until the block is attested on Creditcoin.
+  Builds:
+    · txBytes           RLP-encoded signed transaction
+    · merkleProof       siblings + index proving txBytes ∈ block
+    · continuityProof   Attestcoin block header + attestation chain
+
+Step 4 — Submit on Creditcoin
+  loan.submitRemittanceProof(
+    borrower=0xB, chainKey=SEPOLIA, blockHeight=5_812_340,
+    txBytes, merkleProof (ABI-encoded), continuityProof (ABI-encoded),
+    claimedSender=0xA, claimedAmount=300e6, claimedTimestamp=1_743_500_000,
+    sourceTxHash=keccak256(txBytes)
+  )
+
+Step 5 — On-chain contract enforces the checks (revert on any fail)
+  ✓ sourceTxHash == keccak256(encodedTx)?                       Revert: TxHashMismatch
+  ✓ 0xA is declared for 0xB?                                     Revert: SenderNotDeclared
+  ✓ precompile.verifyAndEmit(chainKey, blockHeight, txBytes, …)  Revert: ProofNotVerified
+  → registry.recordVerifiedTransfer()
+  → emit RemittanceVerified(0xB, 0xA, 300e6, timestamp, txHash)
+
+Step 6 — Credit agent notices
+  monitor calls agentLoop.markDirty("0xB")
+  Next tick → requestCreditReview("0xB")
+  Engine reads registry stats → new limit → emit CreditReviewed
+
+From Sepolia block confirmation → Creditcoin credit limit updated: ~1–2 minutes.
 ```
 
-The application layer provides the experience.
-
-The API provides programmability.
-
-The verification layer establishes trustworthy financial history.
-
-The blockchain layer provides transparent, independently verifiable state.
+> [!NOTE]
+> There's also a **batch proof** variant. A borrower onboarding with 6 months of history can be verified in *one* on-chain call sharing a single continuity proof, rather than 6+ individual calls. This is the depth-of-utilization path and is fully implemented in `submitRemittanceProofBatch()`.
 
 ---
 
-## Example lending flow
+## 🔍 Why Attestcoin Matters (The Trust Boundary)
 
-Consider a borrower who regularly sends money home.
+A naive version of this idea would be: "an oracle worker says sender sent money to borrower, trust it." That's a single point of failure.
 
-```text
-1. Borrower makes remittance
-            ↓
-2. Payment webhook received
-            ↓
-3. Transaction automatically verified
-            ↓
-4. Verified payment added to history
-            ↓
-5. Attestation updated
-            ↓
-6. Credit profile evaluated
-            ↓
-7. Borrower requests a loan
-            ↓
-8. Pool liquidity is checked
-            ↓
-9. Loan is originated
-            ↓
-10. Repayment is monitored
-            ↓
-11. Repayment becomes part of future financial history
-```
+RemitCredit's trust boundary is **different**:
 
-The important part is that the process does not begin with a loan application.
+| Component | What it can / cannot do |
+|-----------|-------------------------|
+| **Worker** | Detects txs, fetches proofs, submits them. It *cannot* forge a transfer — the precompile will reject proof of a tx that never existed |
+| **Backend relayer** | Pays gas and submits borrower-scoped writes. It *cannot* disburse to itself — `requestLoan` always transfers to the borrower param. It never custodies funds |
+| **Attestcoin precompile** | The actual verification gate. Nothing gets recorded unless this returns `true`. This is the protocol-level promise |
+| **Registry** | Writes only from RemittanceMicroLoan. Once written, transfer history is append-only and indexed by hash |
+| **Credit engine** | Deterministic pure function. Same inputs → same decision, every time, on-chain or off-chain |
 
-**It begins with financial behavior.**
+Said another way: **a compromised worker can at worst *fail to notice* a transfer. It can never invent one.**
 
 ---
 
-## Business API
+## 🧪 Testing & Reliability
 
-RemitCredit is being built with an API-first direction so businesses can integrate the underlying lending infrastructure without rebuilding the verification and credit pipeline.
-
-The API is intended to support operations around:
-
-### Credit
-
-* Retrieve verified financial history
-* Request a credit assessment
-* Retrieve credit rationale
-* Retrieve available borrowing capacity
-
-### Loans
-
-* Request a loan
-* Retrieve loan details
-* Retrieve loan status
-* Retrieve outstanding balance
-* Repay a loan
-* Retrieve repayment history
-
-### Verification
-
-* Submit or reference payment activity
-* Retrieve verification status
-* Retrieve attestation information
-* Retrieve verified remittance history
-
-### Monitoring
-
-* Retrieve transaction history
-* Monitor loan state
-* Monitor repayment events
-* Subscribe to relevant webhook events
-
-The API is deliberately designed so that a business can use RemitCredit as a **credit infrastructure layer**, rather than needing to understand every underlying smart-contract interaction.
+- **16+ Hardhat cases** covering registry stats (single transfer, perfect consistency, irregular intervals, same-second divide-by-zero, zero transfers), credit decision engine (all four rejection paths + accept + count-confidence saturation), and the full ASC lifecycle (register → proof submit → review → borrow → repay → borrow-again capped).
+- **Idempotent submissions:** Duplicate proof submissions revert with `DuplicateTransfer` — the worker catches this as `AlreadyRecordedError` and no-ops, so double-triggered webhooks are harmless.
+- **Crash recovery:** The AgentLoop persists dirty-borrower markers to Redis. A worker that dies mid-run recovers its queue on next start instead of dropping reviews.
+- **Resilient WebSocket:** The WS provider auto-reconnects with exponential backoff and rebuilds all event listeners on each new socket. Dropped connections don't mean missed transfers.
 
 ---
 
-## KYC & KYB
-
-The current implementation is optimized for the hackathon demonstration.
-
-Production-grade identity and business verification are planned as the next layer:
-
-* **KYC** for borrower identity verification
-* **KYB** for businesses integrating with RemitCredit
-* sanctions and compliance checks
-* production identity-provider integrations
-* stronger risk controls around loan origination
-
-These are intentionally separated from the core verification and lending architecture so the underlying financial primitives can evolve independently of the identity provider.
-
----
-
-## Technology
-
-The project combines a web application, API infrastructure, blockchain contracts, and event-driven verification.
-
-Key technologies include:
-
-* **Next.js / TypeScript** — application and API layer
-* **PostgreSQL** — application and financial data
-* **Prisma** — database access
-* **Smart contracts** — lending and onchain state
-* **Ethereum Sepolia** — blockchain monitoring and testing
-* **Creditcoin** — hackathon target ecosystem
-* **Webhooks** — payment event ingestion
-* **Attestations** — verified financial history
-* **Redis / background processing** — asynchronous jobs where required
-
----
-
-## Getting started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-* Node.js 20+
-* pnpm
-* PostgreSQL
-* Redis, if running the background workers
-* An Ethereum Sepolia RPC endpoint
-* Creditcoin testnet access where required
-* Required API credentials and webhook configuration
+- **Node.js 20+**
+- **pnpm** (`npm install -g pnpm`)
+- **Creditcoin CC3 Testnet** RPC + funded relayer wallet
+- **Ethereum Sepolia** RPC (HTTP + optional WSS for instant detection)
+- **Alchemy** app + Custom Webhook (for the webhook detection layer — optional; worker monitor works standalone)
+- **Upstash / local Redis** (for v1 API sessions, idempotency, activity cache)
+- **USC SDK** credentials (to build Attestcoin proofs — `@gluwa/usc-sdk` already in package.json)
 
 ### Install
 
 ```bash
 pnpm install
+pnpm compile       # Compile Solidity + generate Typechain types
 ```
 
-### Configure environment
-
-Copy the example environment file:
+### Configure
 
 ```bash
 cp .env.example .env.local
+# Edit: CC3_TESTNET_*, SEPOLIA_*, ALCHEMY_*, REDIS_*, USC_*
 ```
 
-Configure the required database, blockchain, webhook, and application secrets.
-
-At minimum, the project requires the appropriate RPC configuration for the environments being used:
-
+Key environment variables (see `.env.example` for the full list):
 ```env
-SEPOLIA_RPC_URL=
-CC3_TESTNET_RPC_URL=
-CC3_TESTNET_CHAIN_ID=
+# Creditcoin — where the contracts live
+CC3_TESTNET_RPC_URL=https://rpc.cc3-testnet.creditcoin.network
+CC3_TESTNET_CHAIN_ID=102031
+WORKER_PRIVATE_KEY=0x…             # Relayer wallet — gas on Creditcoin
+
+# Source chain — where remittances are observed
+SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}
+SEPOLIA_WSS_RPC_URL=wss://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}
+REMITTANCE_TOKEN_ADDRESS=0x…       # Mock USDC on Sepolia
+
+# Webhook verification
+ALCHEMY_WEBHOOK_SIGNING_KEY=whsec_…
+
+# Proof service (USC SDK)
+USC_API_KEY=…
+USC_NODE_ID=…
 ```
 
-Do not commit secrets or private keys to the repository.
-
-### Run locally
+### Deploy Contracts + Seed Pool
 
 ```bash
-pnpm dev
+# 1. Deploy everything to CC3 testnet
+pnpm hardhat run scripts/deploy.ts --network cc3Testnet
+
+# 2. Deploy mock stablecoin to Sepolia (for remittance tests)
+pnpm hardhat run scripts/deployMocks.ts --network sepolia
+
+# 3. Seed the lending pool ($10k in 6-decimal stablecoin = 10_000_000_000 units)
+pnpm hardhat run scripts/fundPool.ts --network cc3Testnet
 ```
 
-Then open:
+### Run Locally (3 terminals)
 
-```text
-http://localhost:3000
+```bash
+# Terminal 1 — Oracle worker (detects transfers, builds proofs, submits, triggers reviews)
+pnpm worker:dev
+
+# Terminal 2 — Next.js frontend + API
+pnpm frontend:dev
+# → http://localhost:3000
+
+# Terminal 3 (optional) — Run full smart contract test suite
+pnpm test
 ```
 
----
+### Explore the API
 
-## Smart contracts
-
-The contract layer handles the onchain components of the lending system.
-
-The deployed contracts are currently used in a testnet environment for the hackathon.
-
-### Networks
-
-| Network                    | Purpose                                  |
-| -------------------------- | ---------------------------------------- |
-| **Ethereum Sepolia**       | Onchain monitoring and test integrations |
-| **Creditcoin CC3 Testnet** | Creditcoin hackathon deployment          |
-
-> [!WARNING]
-> This project is a hackathon-stage implementation. Testnet deployments and loan logic should not be treated as production financial infrastructure or used with real funds.
+Open `http://localhost:3000/docs/api` after starting the frontend. It's an interactive Scalar playground:
+- Full request / response schemas
+- Try every endpoint (wallet-sign a session first)
+- Copyable cURL snippets
 
 ---
 
-## Project structure
+## 🌟 Feature Summary
 
-The repository is organized around the application, API, verification, and onchain layers.
-
-```text
-app/
-├── api/                 # API routes and webhook endpoints
-├── ...                  # Application pages and UI
-
-lib/
-├── ...                  # Business logic and integrations
-├── onchain/             # Blockchain interaction layer
-├── ...                  # Verification / credit services
-
-contracts/
-├── ...                  # Solidity contracts
-
-scripts/
-├── ...                  # Deployment and utility scripts
-
-prisma/
-├── schema.prisma        # Database schema
-└── migrations/          # Database migrations
-
-public/
-└── ...                  # Product assets
-```
+| Feature | Where it lives | Status |
+|---------|---------------|--------|
+| **Synchronous Attestcoin proof verification** | `RemittanceMicroLoan.submitRemittanceProof` + precompile | ✅ Hackathon |
+| **Dual-layer transfer detection** (WS monitor + signed webhooks) | `worker/src/monitor.ts` · `src/server/alchemyWebhook.ts` | ✅ Hackathon |
+| **Append-only verified-transfer registry** | `RemittanceCreditRegistry.sol` | ✅ Hackathon |
+| **On-chain consistency + stats engine** | `RemittanceCreditRegistry.getStats()` | ✅ Hackathon |
+| **Deterministic 4-rule credit agent** | `CreditDecisionEngine.sol` | ✅ Hackathon |
+| **Gas-free decision preview (TypeScript mirror)** | `shared/services/creditAgent.ts` | ✅ Hackathon |
+| **On-chain liquidity pool** | `RemittanceMicroLoan.fundPool / requestLoan / repay` | ✅ Hackathon |
+| **Sender validation pipeline** (wallet age + funding trace + sanctions) | `shared/services/senderValidationPipeline.ts` | ✅ Hackathon |
+| **Immutable attestation of sender KYC results** | `SenderValidationAttestation.sol` | ✅ Hackathon |
+| **Batch proof verification** (1 call for N transfers) | `submitRemittanceProofBatch()` | ✅ Hackathon |
+| **Autonomous agent loop** (re-decide on new data) | `worker/src/runAgentLoop.ts` | ✅ Hackathon |
+| **Business REST API v1 + OpenAPI + playground** | `src/app/api/v1/*` · `/docs/api` | ✅ Hackathon |
+| **SIWE wallet session auth** | `src/server/v1/auth.ts` | ✅ Hackathon |
+| **Full React UI** (credit, loans, remittances, dashboard, onboarding) | `src/app/**` | ✅ Hackathon |
+| **Production KYC** (e.g. Onfido / Veriff) | Plug into sender validation pipeline | 🔜 Post-hackathon |
+| **Production KYB** for business API users | Plug into v1 auth middleware | 🔜 Post-hackathon |
+| **Dynamic credit parameters via governance** | `CreditDecisionEngine.setParams()` is owner-only today | 🔜 Post-hackathon |
+| **LP yield / pool yield model** | Currently zero-yield pool | 🔜 Post-hackathon |
+| **Mainnet deployments** | CC3 + real USDC source chains | 🔜 Post-hackathon |
 
 ---
 
-## What makes RemitCredit different?
+## 🎯 Why RemitCredit?
 
-Most lending systems start with the question:
+Plenty of projects put loans on-chain. Almost none solve the *actual* hard problem at the bottom of the stack.
 
-> **"What credit history does this person have?"**
+The hard problem isn't "how do I transfer an ERC-20 from a pool to a borrower." Ethereum solved that in 2016.
 
-RemitCredit starts somewhere else:
+The hard problem is:
 
-> **"What financial behavior can we actually verify?"**
+> **How do you get a credit signal you can trust, for a population that traditional credit bureaus have never heard of?**
 
-That distinction matters.
+RemitCredit's answer is four layers deep and each one compounds the trust of the last:
 
-A person can have little or no traditional credit history while still having months or years of consistent financial activity.
+1.  **Observe** behavior on a source of financial truth people already use (Sepolia / any EVM where ERC-20 remittances happen).
+2.  **Prove** every single transfer with Attestcoin block proofs — not oracles, not signed claims, actual inclusion proofs.
+3.  **Decide** with a rules engine that reads *only* proven data, emits a public rationale, and can be previewed for free.
+4.  **Recycle** repayment back into the history, so each successful loan + payback is a stepping stone toward a larger line.
 
-RemitCredit creates a bridge between that activity and programmable credit:
+The result isn't just another dApp. It's a **credit onramp for the 2.2 billion people the existing system skipped** — built on primitives that are open, auditable, and don't require trusting the backend operator.
 
-**payment → verification → attestation → credit → liquidity → repayment**
-
-The long-term vision is a financial system where people can build credit from the economic behavior they already demonstrate, rather than being permanently excluded because traditional credit infrastructure has never recorded them.
-
----
-
-## Roadmap
-
-### Hackathon
-
-* [x] Remittance verification pipeline
-* [x] Payment event handling
-* [x] Attestation-based credit signals
-* [x] Credit assessment
-* [x] Lending pool
-* [x] Loan origination
-* [x] Repayment flow
-* [x] Onchain monitoring
-* [x] Ethereum Sepolia integration
-* [x] Creditcoin testnet deployment
-* [x] Initial business API layer
-
-### Post-hackathon
-
-* [ ] Production KYC integration
-* [ ] Production KYB integration
-* [ ] Expanded business API
-* [ ] More robust risk models
-* [ ] Additional payment/remittance providers
-* [ ] Production-grade compliance controls
-* [ ] Mainnet deployment
-* [ ] Expanded liquidity-provider tooling
+> RemitCredit: *Every remittance is a down payment on your credit future.*
 
 ---
 
-## Demo
+## 🛠️ Built for the Creditcoin Hackathon
 
-### Video
+RemitCredit leans into exactly what Creditcoin + Attestcoin make uniquely possible: **cross-chain state proofs without a trusted oracle network.**
 
-<!-- Add final demo video here -->
+The Attestcoin precompile is the linchpin that makes the whole design honest. Without it, we'd be back to "trust the relayer" — which is exactly what every other remittance-lending idea does. With it, we have a system where:
 
-`[ INSERT DEMO VIDEO HERE ]`
+- A judge can verify every single transfer that went into a credit decision
+- A borrower can read their own rationale and the exact stats behind it
+- An auditor can replay the credit agent *on-chain* or *off-chain* and get the same answer
+- The worst a compromised worker can do is ignore transfers (easily noticed) — it can't fabricate one
 
-### Screenshots
+That's the difference between a demo and infrastructure.
 
-<!-- Add screenshots here -->
-
-`[ INSERT DEMO SCREENSHOT 1 HERE ]`
-
-`[ INSERT DEMO SCREENSHOT 2 HERE ]`
-
-`[ INSERT ARCHITECTURE / ATTESTATION SCREENSHOT HERE ]`
-
----
-
-## Built for the Creditcoin Hackathon
-
-RemitCredit explores what happens when **verified financial behavior becomes a portable credit primitive**.
-
-Instead of treating remittance as a simple money-transfer event, RemitCredit treats it as a source of financial reputation.
-
-That creates a foundation where recurring payments can do more than move money.
-
-They can help someone **prove they are creditworthy**.
+**Enjoy the project.** 🙏
